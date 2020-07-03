@@ -38,3 +38,12 @@ cargo install cargo-binutils
 
 另外`qemu`也是之前我做uCore的时候就装好了的，如果还没装，可以使用`pacman`安装`qemu`和`qemu-arch-extra`。
 
+然后折腾`vim`的Rust自动补全也折腾了好久，用了`YouCompleteMe`跟`rust-analyzer`的lsp，下面是`vim`的配置：
+
+```vimrc
+Plug 'ycm-core/YouCompleteMe', {'do': 'python install.py --clangd-completer'}
+Plug 'ycm-core/lsp-examples', {'do': 'python install.py --enable-rust'}
+```
+
+今天做`rust-by-example`做完第二节了，好累，后面还有18节，要在剩下一天内完成。加油吧！
+
