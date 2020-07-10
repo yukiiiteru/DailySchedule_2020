@@ -534,6 +534,8 @@ Supervisor CSRs:
 
 * [Lab 0 实验记录](06-rcore-lab-notes/lab0.md)
 * [Lab 0 代码](06-rcore-lab-notes/lab0)
+* [Lab 1 实验记录](06-rcore-lab-notes/lab1.md)
+* [Lab 1 代码](06-rcore-lab-notes/lab1)
 
 感觉rCore挺有意思的，有点想看一下王润基学长的毕设论文了
 
@@ -566,6 +568,12 @@ gitbook serve
 ### Day8 计划
 
 明天做一下Lab1和Lab2以及小练习吧，今天还没运动没记单词，就先到这
+
+另外感觉自己做的Rust小练习有点少，要不每天再加几个？
+
+**Day 7 深夜补充**：刚才突然觉得无聊，于是一不小心就把Lab1做完了，还发现了几处文档中代码的缺失，提交了一发pr，应该能过（
+
+晚安
 
 ---
 
