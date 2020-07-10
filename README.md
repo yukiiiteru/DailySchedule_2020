@@ -21,6 +21,11 @@
 * [(Day 3) rustlings exercises](03-rustlilngs-exercises)
 * [(Day 4) Learn Rust the Hard Way](04-learn-rust-the-hard-way)
 * [(Day 4) Leetcode by Rust](05-leetcode)
+* (Day 5) 计算机组成与设计：RISC-V 浙大在线课程 前三章
+* (Day 6) 《RISC-V手册》
+* (Day 7) RISC-V特权指令规范
+* [(Day 7) Lab 0](06-rcore-lab-notes/lab0.md)
+* [(Day 7) Lab 1](06-rcore-lab-notes/lab1.md)
 
 ---
 
