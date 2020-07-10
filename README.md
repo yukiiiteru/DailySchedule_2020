@@ -7,7 +7,7 @@
 |       Mon       |       Tue       |       Wed       |       Thu       |       Fri       |       Sat       |       Sun       |
 |-----------------|-----------------|-----------------|-----------------|-----------------|-----------------|-----------------|
 |                 |                 |        1        |        2        |   3([D0][D0])   |   4([D1][D1])   |   5([D2][D2])   |
-|   6([D3][D3])   |   7([D4][D4])   |   8([D5][D5])   |   9([D6][D6])   |  10             |  11             |  12             |
+|   6([D3][D3])   |   7([D4][D4])   |   8([D5][D5])   |   9([D6][D6])   |  10([D7][D7])   |  11             |  12             |
 | 13              | 14              | 15              | 16              | 17              | 18              | 19              |
 | 20              | 21              | 22              | 23              | 24              | 25              | 26              |
 | 27              | 28              | 29              | 30              |                 |                 |                 |
@@ -479,6 +479,94 @@ B站搬运地址：[计算机组成与设计：RISC-V【浙江大学】](https:/
 
 今天大致刷了一下RISC-V的手册，明天刷一下特权级指令规范吧。如果进度快的话甚至可以开始刷rCore了。加油！
 
+## Day 7 2020-07-10
+
+开始刷特权级指令规范！
+
+感觉全英文读起来有点慢，还是太菜了啊
+
+另外我觉得吧，这种类似手册的东西，直接刷挺枯燥的，比较适合一遍做一遍查阅参考
+
+所以我就大体过一遍 CSR 和 Supervisor-Level 相关内容吧，过完就开始做rCore的实验！
+
+### Day7 笔记
+
+[RISC-V特权级指令规范](https://content.riscv.org/wp-content/uploads/2019/08/riscv-privileged-20190608-1.pdf)
+
+> The SYSTEM major opcode is used to encode all privileged instructions in the RISC-V ISA. These can be divided into two main classes:  those that atomically read-modify-write control and status registers (CSRs), and all other privileged instructions.
+>
+> 特权指令可分为两大类：原子地 读取、修改、写入 控制状态寄存器（CSR）的指令，以及其它特权指令
+
+CSR Field Specifications（CSR域规范）
+
+* Reserved Writes Preserve Values, Reads Ignore Values (WPRI)
+  * 写入预留值，读取忽略值（即预留字段
+* Write/Read Only Legal Values (WLRL)
+  * 仅读/写合法值
+* Write Any Values, Reads Legal Values (WARL)
+  * 写任意值，读合法值
+
+Supervisor CSRs:
+
+* Supervisor Status Register (`sstatus`)
+* Supervisor Trap Vector Base Address Register (`stvec`)
+* Supervisor Interrupt Registers (`sip` and `sie`)
+* Supervisor Timers and Performance Counters
+  * Supervisor software uses the same hardware performance monitoring facility as user-mode software,including the `time`, `cycle`, and `instret` CSRs. The implementation should provide a mechanism to modify the counter values.
+* Counter-Enable Register (`scounteren`)
+* Supervisor Scratch Register (`sscratch`)
+* Supervisor Exception Program Counter (`sepc`)
+* Supervisor Cause Register (`scause`)
+* Supervisor Trap Value (`stval`) Register
+* Supervisor Address Translation and Protection (`satp`) Register
+
+### Day7 进度
+
+#### RISC-V学习
+
+昨天刷了一部分RISC-V的手册，今天刷了一部分RISC-V的特权级指令规范
+
+鉴于我学过MIPS汇编，而RV32I的指令跟MIPS挺像的，所以跟特权级无关的内容看得比较快
+
+而特权级的内容我觉得更适合用来当手册，随时查阅的那种，所以我大致看了一遍，就开始刷rCore了
+
+#### rCore实验
+
+* [Lab 0 实验记录](06-rcore-lab-notes/lab0.md)
+* [Lab 0 代码](06-rcore-lab-notes/lab0)
+
+感觉rCore挺有意思的，有点想看一下王润基学长的毕设论文了
+
+##### 一点小插曲
+
+发现了一处文档的错误，刚打算提交pr，去文档仓库发现早就已经被修改了，只是文档的网页出了点问题，还没更新
+
+应该进行的修改为：将`os/src/main.rs`文件中第12行的`#![feature(asm)]`修改为`#![feature(llvm_asm)]`，这可能是`rust-nightly`最近的更改
+
+最终的`src/main.rs`有点好笑，第11行写着：
+
+```rust
+//!   任何没有注释的地方都会产生警告：这个属性用来压榨写实验指导的学长，同学可以删掉了
+```
+
+##### 本地编译rCore-Tutorial文档
+
+鉴于[rCore-Tutorial V3](https://rcore-os.github.io/rCore-Tutorial-deploy/)网站的文档更新问题，我打算直接`clone`该文档的仓库，然后在本地编译：
+
+```bash
+git clone https://github.com/rcore-os/rCore-Tutorial.git
+cd rCore-Tutorial
+npm install -g gitbook-cli
+gitbook install
+gitbook serve
+```
+
+编译后发现lab1和lab2还多了几个小练习，有点心动
+
+### Day8 计划
+
+明天做一下Lab1和Lab2以及小练习吧，今天还没运动没记单词，就先到这
+
 ---
 
 [D0]: #day-0-2020-07-03
@@ -488,3 +576,4 @@ B站搬运地址：[计算机组成与设计：RISC-V【浙江大学】](https:/
 [D4]: #day-4-2020-07-07
 [D5]: #day-5-2020-07-08
 [D6]: #day-6-2020-07-09
+[D7]: #day-7-2020-07-10
