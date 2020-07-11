@@ -7,7 +7,7 @@
 |       Mon       |       Tue       |       Wed       |       Thu       |       Fri       |       Sat       |       Sun       |
 |-----------------|-----------------|-----------------|-----------------|-----------------|-----------------|-----------------|
 |                 |                 |        1        |        2        |   3([D0][D0])   |   4([D1][D1])   |   5([D2][D2])   |
-|   6([D3][D3])   |   7([D4][D4])   |   8([D5][D5])   |   9([D6][D6])   |  10([D7][D7])   |  11             |  12             |
+|   6([D3][D3])   |   7([D4][D4])   |   8([D5][D5])   |   9([D6][D6])   |  10([D7][D7])   |  11([D8][D8])   |  12             |
 | 13              | 14              | 15              | 16              | 17              | 18              | 19              |
 | 20              | 21              | 22              | 23              | 24              | 25              | 26              |
 | 27              | 28              | 29              | 30              |                 |                 |                 |
@@ -22,10 +22,11 @@
 * [(Day 4) Learn Rust the Hard Way](04-learn-rust-the-hard-way)
 * [(Day 4) Leetcode by Rust](05-leetcode)
 * (Day 5) 计算机组成与设计：RISC-V 浙大在线课程 前三章
-* (Day 6) 《RISC-V手册》
-* (Day 7) RISC-V特权指令规范
+* (Day 6) 《RISC-V手册》 第一、二、三、四、五、六、七、十章
+* (Day 7) RISC-V特权指令规范 第一、二、四章
 * [(Day 7) Lab 0](06-rcore-lab-notes/lab0.md)
-* [(Day 7) Lab 1](06-rcore-lab-notes/lab1.md)
+* [(Day 8) Lab 1](06-rcore-lab-notes/lab1.md)
+* [(Day 8) 实验一：中断](06-rcore-lab-notes/lab1_practice.md)
 
 ---
 
@@ -580,6 +581,29 @@ gitbook serve
 
 晚安
 
+## Day 8 2020-07-11
+
+昨天睡太晚，今天状态不佳，少做一点，早休息，休息好了明天继续
+
+### Day8 进度
+
+笨办法学Rust：
+
+* [习题 18: 命名、变量、代码、函数](04-learn-rust-the-hard-way/ex18.rs)
+* [习题 19: 函数和变量](04-learn-rust-the-hard-way/ex19.rs)
+* [习题 20: 函数和文件](04-learn-rust-the-hard-way/ex20.rs)
+* [习题 21: 函数可以返回东西](04-learn-rust-the-hard-way/ex21.rs)
+* 习题 22: 到现在你学到了哪些东西？
+
+rCore：
+
+* 完善了[Lab 1 实验记录](06-rcore-lab-notes/lab1.md)，在里面仔细分析了操作系统产生时钟中断的全过程
+* 完成了[实验一：中断](06-rcore-lab-notes/lab1_practice.md)
+
+### Day9 计划
+
+明天争取做完Lab2、Lab3和实验二！加油！
+
 ---
 
 [D0]: #day-0-2020-07-03
@@ -590,3 +614,4 @@ gitbook serve
 [D5]: #day-5-2020-07-08
 [D6]: #day-6-2020-07-09
 [D7]: #day-7-2020-07-10
+[D8]: #day-8-2020-07-11
