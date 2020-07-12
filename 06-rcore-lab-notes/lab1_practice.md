@@ -10,7 +10,7 @@ git checkout lab-1
 
 ## 实验题
 
-1. 简述：在 rust_main 函数中，执行 ebreak 命令后至函数结束前，sp 寄存器的值是怎样变化的？
+1. 简述：在 `rust_main` 函数中，执行 `ebreak` 命令后至函数结束前，`sp` 寄存器的值是怎样变化的？
 
    分析过程：
 
