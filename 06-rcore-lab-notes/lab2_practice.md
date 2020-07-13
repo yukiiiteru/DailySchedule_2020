@@ -13,14 +13,14 @@
    1. 回答：`algorithm/src/allocator` 下有一个 `Allocator trait`，我们之前用它实现了物理页面分配。这个算法的时间和空间复杂度是什么？
 
       `Allocator`是一个`trait`，本身没有复杂度，要根据具体实现判断
-      
-	  * `BitmapVectorAllocator`：时间O(n)，空间O(n)
 
-	  * `StackedAllocator`：时间O(1)，空间O(n)
+      * `BitmapVectorAllocator`：时间O(n)，空间O(n)
 
-	  参考答案：
+      * `StackedAllocator`：时间O(1)，空间O(n)
 
-	  > 时间复杂度是 O(1)，空间复杂度是 O(n)
+      参考答案：
+
+      > 时间复杂度是 O(1)，空间复杂度是 O(n)
 
    2. 实现基于线段树的物理页面分配算法
 
@@ -29,4 +29,3 @@
 3. 挑战实验（选做）
 
    等Lab全部看完后再写
-

@@ -126,6 +126,12 @@ pub extern "C" fn rust_main() -> ! {
 
       正常执行
 
+      **注**：这里一直定位不到`__rust_alloc`的具体实现，查询得知该函数使用 `extern` 语句引入，但没找到引入来源
+
+      ~~个人理解是进入到了`buddy_system`的`src/frame.rs`，调用`FrameAllocator::alloc`来申请堆内存~~
+
+      之前的理解应该是错误的，我在`src/memory/heap.rs`中，`static HEAP`前发现了 `#[global_allocator]` 标记，它可以为全局需要用到堆的地方分配空间
+
    9. 返回到 `core::alloc::AllocRef` 的 `alloc` 函数，为 `ptr` 赋值
 
    10. 进入 `core::ptr::non_null::NonNull`，执行 `new` 函数：
@@ -172,4 +178,30 @@ pub extern "C" fn rust_main() -> ! {
       }
       ```
 
-   3. 有点晚了，明天再写（
+   3. 进入 `buddy_system_allocator::Heap::add_to_heap` 的 `add_to_heap` 函数：
+
+      ```rust
+      /// Add a range of memory [start, end) to the heap
+      pub unsafe fn add_to_heap(&mut self, mut start: usize, mut end: usize) {
+          // avoid unaligned access on some platforms
+          start = (start + size_of::<usize>() - 1) & (!size_of::<usize>() + 1);
+          end = end & (!size_of::<usize>() + 1);
+          assert!(start <= end);
+  
+          let mut total = 0;
+          let mut current_start = start;
+  
+          while current_start + size_of::<usize>() <= end {
+              let lowbit = current_start & (!current_start + 1);
+              let size = min(lowbit, prev_power_of_two(end - current_start));
+              total += size;
+  
+              self.free_list[size.trailing_zeros() as usize].push(current_start as *mut usize);
+              current_start += size;
+          }
+  
+          self.total += total;
+      }
+      ```
+
+      这段代码的核心即，为 `free_list` 链表添加 `current_start`，执行完后内存初始化就完成了

@@ -90,18 +90,18 @@ boot_stack_top:
 
 OpenSBI的系统调用：
 
-| Function Name             | Function ID | Extension ID | Replacement Extension |
-| ------------------------- | ----------- | ------------ | --------------------- |
-| sbi_set_timer             |           0 |         0x00 |                   N/A |
-| sbi_console_putchar       |           0 |         0x01 |                   N/A |
-| sbi_console_getchar       |           0 |         0x02 |                   N/A |
-| sbi_clear_ipi             |           0 |         0x03 |                   N/A |
-| sbi_send_ipi              |           0 |         0x04 |                   N/A |
-| sbi_remote_fence_i        |           0 |         0x05 |                   N/A |
-| sbi_remote_sfence_vma     |           0 |         0x06 |                   N/A |
-| sbi_remote_sfence_vma_asid|           0 |         0x07 |                   N/A |
-| sbi_shutdown              |           0 |         0x08 |                   N/A |
-| *RESERVED*                |             |    0x09-0x0F |                       |
+| Function Name                | Function ID | Extension ID | Replacement Extension |
+| ---------------------------- | ----------- | ------------ | --------------------- |
+| `sbi_set_timer`              |           0 |         0x00 |                   N/A |
+| `sbi_console_putchar`        |           0 |         0x01 |                   N/A |
+| `sbi_console_getchar`        |           0 |         0x02 |                   N/A |
+| `sbi_clear_ipi`              |           0 |         0x03 |                   N/A |
+| `sbi_send_ipi`               |           0 |         0x04 |                   N/A |
+| `sbi_remote_fence_i`         |           0 |         0x05 |                   N/A |
+| `sbi_remote_sfence_vma`      |           0 |         0x06 |                   N/A |
+| `sbi_remote_sfence_vma_asid` |           0 |         0x07 |                   N/A |
+| `sbi_shutdown`               |           0 |         0x08 |                   N/A |
+| *RESERVED*                   |             |    0x09-0x0F |                       |
 
 [OpenSBI文档](https://github.com/riscv/riscv-sbi-doc/blob/master/riscv-sbi.adoc)
 
