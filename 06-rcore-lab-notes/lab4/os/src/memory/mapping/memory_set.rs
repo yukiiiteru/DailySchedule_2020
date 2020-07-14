@@ -10,10 +10,6 @@ use crate::memory::{
     MemoryResult,
 };
 use alloc::{vec, vec::Vec};
-use xmas_elf::{
-    program::{SegmentData, Type},
-    ElfFile,
-};
 
 /// 一个进程所有关于内存空间管理的信息
 pub struct MemorySet {
@@ -83,44 +79,6 @@ impl MemorySet {
             segments,
             allocated_pairs,
         })
-    }
-
-    /// 通过 elf 文件创建内存映射（不包括栈）
-    // todo: 有可能不同的字段出现在同一页？
-    pub fn from_elf(file: &ElfFile, is_user: bool) -> MemoryResult<MemorySet> {
-        // 建立带有内核映射的 MemorySet
-        let mut memory_set = MemorySet::new_kernel()?;
-
-        // 遍历 elf 文件的所有部分
-        for program_header in file.program_iter() {
-            if program_header.get_type() != Ok(Type::Load) {
-                continue;
-            }
-            // 从每个字段读取「起始地址」「大小」和「数据」
-            let start = VirtualAddress(program_header.virtual_addr() as usize);
-            let size = program_header.mem_size() as usize;
-            let data: &[u8] =
-                if let SegmentData::Undefined(data) = program_header.get_data(file).unwrap() {
-                    data
-                } else {
-                    return Err("unsupported elf format");
-                };
-
-            // 将每一部分作为 Segment 进行映射
-            let segment = Segment {
-                map_type: MapType::Framed,
-                range: Range::from(start..(start + size)),
-                flags: Flags::user(is_user)
-                    | Flags::readable(program_header.flags().is_read())
-                    | Flags::writable(program_header.flags().is_write())
-                    | Flags::executable(program_header.flags().is_execute()),
-            };
-
-            // 建立映射并复制数据
-            memory_set.add_segment(segment, Some(data))?;
-        }
-
-        Ok(memory_set)
     }
 
     /// 替换 `satp` 以激活页表
