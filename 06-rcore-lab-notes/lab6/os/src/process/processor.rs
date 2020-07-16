@@ -2,6 +2,7 @@
 
 use super::*;
 use algorithm::*;
+use hashbrown::HashSet;
 use lazy_static::*;
 
 lazy_static! {
@@ -51,6 +52,8 @@ pub struct Processor {
     current_thread: Option<Arc<Thread>>,
     /// 线程调度器，记录活跃线程
     scheduler: SchedulerImpl<Arc<Thread>>,
+    /// 保存休眠线程
+    sleeping_threads: HashSet<Arc<Thread>>,
 }
 
 impl Processor {
@@ -93,7 +96,13 @@ impl Processor {
                 return context;
             } else {
                 // 没有活跃线程
-                panic!("all threads terminated, shutting down");
+                if self.sleeping_threads.is_empty() {
+                    // 也没有休眠线程，则退出
+                    panic!("all threads terminated, shutting down");
+                } else {
+                    // 有休眠线程，则等待中断
+                    crate::interrupt::wait_for_interrupt();
+                }
             }
         }
     }
@@ -106,9 +115,27 @@ impl Processor {
         self.scheduler.add_thread(thread, 0);
     }
 
+    /// 唤醒一个休眠线程
+    pub fn wake_thread(&mut self, thread: Arc<Thread>) {
+        thread.inner().sleeping = false;
+        self.sleeping_threads.remove(&thread);
+        self.scheduler.add_thread(thread, 0);
+    }
+
     /// 保存当前线程的 `Context`
     pub fn park_current_thread(&mut self, context: &Context) {
         self.current_thread().park(*context);
+    }
+
+    /// 令当前线程进入休眠
+    pub fn sleep_current_thread(&mut self) {
+        // 从 current_thread 中取出
+        let current_thread = self.current_thread();
+        // 记为 sleeping
+        current_thread.inner().sleeping = true;
+        // 从 scheduler 移出到 sleeping_threads 中
+        self.scheduler.remove_thread(&current_thread);
+        self.sleeping_threads.insert(current_thread);
     }
 
     /// 终止当前的线程
