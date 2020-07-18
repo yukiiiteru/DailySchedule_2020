@@ -33,7 +33,9 @@
 
       此外，我也参考了 [@yunwei37](https://github.com/yunwei37) 仓库中的链表实现，在 `Rc` 中添加 `RefCell` 也是受该仓库的启发，感谢云微同学
 
-      代码地址：[基于线段树实现的 buddy system](06-rcore-lab-notes/lab2_practice/os/src/segment_tree_allocator)
+      代码地址：~~基于线段树实现的 buddy system~~
+
+      **20200718补充**：突然翻车
 
 3. 挑战实验（选做）
 
