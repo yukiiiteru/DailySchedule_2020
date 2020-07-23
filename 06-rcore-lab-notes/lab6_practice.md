@@ -41,3 +41,21 @@
    3. 参考部分 rCore 的代码，添加 `Flags` 和 `check_and_clone_cstr`、`copy_from_user` 函数，用来将 `path` 变量从 `*const u8` 转换成 `&str`，这一步挺麻烦的
 
    4. 后面的实现就比较简单了，将文件添加到进程的 `descriptors` 中，返回 `fd`，`sys_open` 就完成了，`sys_close` 也只是将 `fd` 从 `descriptors` 中移出
+
+6. 挑战实验：实现 `sys_pipe`，返回两个文件描述符，分别为一个管道的读和写端。用户线程调用完 `sys_pipe` 后调用 `sys_clone`，父线程写入管道，子线程可以读取。读取时尽量避免忙等待。
+
+   这个不难，就是有点麻烦
+
+   在简单写一下实现步骤吧，再说明一下，我不是一遍写代码一遍记录的，所以步骤可能不太准确（
+
+   1. 按照惯例，在操作系统和用户的 `syscall.rs` 中添加系统调用号
+
+   2. 惯例，在 `kernel/fs` 里添加 `sys_pipe2`
+
+   3. 参考 `stdin.rs` 和 `stdout.rs` 还有 rCore 的代码，编写 `pipe.rs`，具体写法跟 `Stdin` 和 `Stdout` 很像，不再赘述
+
+   4. 在 `sys_pipe2` 中，调用 `Pipe::create_pair` 创建管道，把管道添加到进程的 `descriptors` 中，然后类型转换来转换去，把管道的 `fd` 传给用户
+
+   5. 编写用户程序，先创建管道再 clone，这个顺序不能反
+
+   大概就是这样了～
