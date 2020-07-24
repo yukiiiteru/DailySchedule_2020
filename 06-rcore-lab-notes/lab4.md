@@ -327,3 +327,63 @@
    该函数杀死当前线程，即，将线程从调度器中移除，然后让 `Processor` 调度下一个线程
 
    至此，线程生命周期结束
+
+## 分析：线程是如何终止的 (2)
+
+由于 master 分支的代码发生了变化，因此重新分析这一节
+
+1. 创建函数 `kernel_thread_exit`
+
+   ```rust
+   /// 内核线程需要调用这个函数来退出
+   fn kernel_thread_exit() {
+       // 当前线程标记为结束
+       PROCESSOR.lock().current_thread().as_ref().inner().dead = true;
+       // 制造一个中断来交给操作系统处理
+       unsafe { llvm_asm!("ebreak" :::: "volatile") };
+   }
+   ```
+
+2. 创建线程并将其返回地址设置为 `kernel_thread_exit` 函数
+
+   ```rust
+   /// 创建一个内核进程
+   pub fn create_kernel_thread(
+       process: Arc<Process>,
+       entry_point: usize,
+       arguments: Option<&[usize]>,
+   ) -> Arc<Thread> {
+       // 创建线程
+       let thread = Thread::new(process, entry_point, arguments).unwrap();
+       // 设置线程的返回地址为 kernel_thread_exit
+       thread
+           .as_ref()
+           .inner()
+           .context
+           .as_mut()
+           .unwrap()
+           .set_ra(kernel_thread_exit as usize);
+
+       thread
+   }
+   ```
+
+   重点是 `thread.context.set_ra`，修改线程 `context` 的 `ra` 寄存器
+
+3. 线程正常执行直到结束，跳转到 `kernel_thread_exit` 函数，该函数将线程标记为 `dead = true`，并调用 `ebreak` 指令触发断点（即中断）
+
+4. 在中断处理函数 `handler_interrupt` 内结束 `dead = true` 的线程
+
+   ```rust
+       {
+           let mut processor = PROCESSOR.lock();
+           let current_thread = processor.current_thread();
+           if current_thread.as_ref().inner().dead {
+               println!("thread {} exit", current_thread.id);
+               processor.kill_current_thread();
+               return processor.prepare_next_thread();
+           }
+       }
+   ```
+
+   至此，线程正常结束，而不会像之前一样在结束前引发访存错误
