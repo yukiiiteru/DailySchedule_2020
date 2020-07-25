@@ -960,6 +960,80 @@ rCore实验：
 
 明天真的要开始 zCore 了
 
+## Day 22 2020-07-25
+
+开始研究 zCore！第一步是 `clone` 然后运行试试
+
+`git lfs pull` 真的好慢好慢好慢
+
+`make rootfs` 也好慢好慢好慢
+
+一切准备就绪后，我运行了 `cargo run --release -p linux-loader /bin/busybox`，报错：
+
+> error: no release found for 'nightly-2020-06-04'
+
+我觉得应该是开发的大佬们用的是 macOS，而我用的是 Linux 的问题，我把 `rust-toolchain` 里的 nightly 版本改成 `nightly-2020-06-27`，结果又报错：
+
+> error: \`extern\` fn uses type \`core::option::Option\<dummy::PhysFrame\>\`, which is not FFI-safe
+>
+> error: \`extern\` fn uses type \`core::option::Option<usize>\`, which is not FFI-safe
+
+我参照提示，把所有的 `#![deny(warnings)]` 给注释掉，这些 `error` 就变成 `warning` 了，然后继续编译运行，又报错
+
+> thread 'main' panicked at 'called \`Result::unwrap()\` on an \`Err\` value: EINVAL', linux-loader/src/lib.rs:37:68
+
+我突然意识到，开发 zCore 的大佬们好像用的都是 macOS 而不是 Linux，所以我掏出了我家八年前买的 MacBook Air，开始装系统、配环境，没有出现 Rust 版本的错误、没有出现 `not FFI-safe` 的错误，但是出现了跟 Linux 最后相同的错误：
+
+> thread 'main' panicked at 'called \`Result::unwrap()\` on an \`Err\` value: EINVAL', linux-loader/src/lib.rs:37:68
+
+查了下这个文件，在这样一行报的错：
+
+```rust
+let (entry, sp) = loader.load(&proc.vmar(), &data, args, envs).unwrap();
+```
+
+应该是加载文件出的问题，不知道怎么解决
+
+绝望
+
+我又换回 Linux，尝试运行下一个 `cargo run --release -p zircon-loader prebuilt/zircon/x64`，结果又报错：
+
+> thread 'main' panicked at 'called \`Result::unwrap()\` on an \`Err\` value: "Did not find ELF magic number"', zircon-loader/src/lib.rs:58:58
+
+那再试试第三个吧，运行 `cd zCore && make run mode=release`，相同的 `not FFI-safe`，这个我已经会解决了，解决掉之后，又报没有 `nightly-2020-06-04` 版本，这次是改 `rboot/rust-toolchain`，改掉之后成功运行，进入了熟悉的 QEMU 界面，然后又...
+
+> panicked at 'called \`Result::unwrap()\` on an \`Err\` value: "Did not find ELF magic number"', zircon-loader/src/lib.rs:58:58
+
+绝望
+
+又换回 macOS，一样的错误
+
+查了下这个文件，是这样一行代码报的错：
+
+```rust
+let elf = ElfFile::new(images.userboot.as_ref()).unwrap();
+```
+
+是磁盘镜像出的问题，读出来的 ELF 文件检验 `magic number` 失败
+
+绝望
+
+我是完全照着 `README.md` 里的步骤做的，为什么要这样对我
+
+```bash
+rm -rf zCore
+```
+
+再见，我决定这个月先不碰 zCore 了，老老实实折腾 rCore
+
+**20200725晚上补充**：我突然发现 Rust 找不到 `nightly-06-04` 这个版本是源的问题，把 rustup 的 TUNA 源去掉就可以了，所以...重新 `clone`...
+
+装完了，一样的错误，再见
+
+### Day23 计划
+
+实验四又改了，把对线程的 `clone` 改成对进程的 `fork`，虽然助教说了已经做过的不用重新做了，但是我还是想试一下
+
 ---
 
 [D0]: #day-0-2020-07-03
@@ -984,3 +1058,4 @@ rCore实验：
 [D19]: #day-19-2020-07-22
 [D20]: #day-20-2020-07-23
 [D21]: #day-21-2020-07-24
+[D22]: #day-22-2020-07-25
