@@ -52,3 +52,117 @@
    研究了半天，发现我犯了个低级错误，`sp` 寄存器的值没有加上偏移，浪费了我半天时间（哭
 
    总算是完成了，地址：[实验四（上）代码](06-rcore-lab-notes/lab4_practice_1)
+
+5. （实验4修改版）实验：实现进程的 fork()。目前的内核线程不能进行系统调用，所以我们先简化地实现为“按 F 进行 fork”。fork 后应当为目前的进程复制一份几乎一样的拷贝。
+
+   这个失败了，但是还是放一下实现过程吧，给其他人作参考
+
+   1. 修改 `process.rs` 中的 `ProcessInner`，为其添加线程：
+
+      ```rust
+      pub struct ProcessInner {
+          /// 进程中的线程公用页表 / 内存映射
+          pub memory_set: MemorySet,
+          /// 打开的文件描述符
+          pub descriptors: Vec<Arc<dyn INode>>,
+          /// 进程中的所有线程
+          pub threads: Vec<Arc<Thread>>,
+      }
+      ```
+
+   2. 修改 `processor.rs` 中的 `add_thread` 和 `kill_current_thread`，在添加线程和杀死线程的时候对 `threads` 进行操作，代码略
+
+   3. 写 `fork`，失败代码如下：
+
+      ```rust
+      /// fork 进程
+      pub fn fork(&self, context: &Context) -> MemoryResult<Arc<Self>> {
+          let process = Arc::new(Self {
+              id: unsafe {
+                  PROCESS_COUNTER += 1;
+                  PROCESS_COUNTER
+              },
+              is_user: self.is_user,
+              inner: Mutex::new(ProcessInner {
+                  memory_set: MemorySet::new_kernel()?,
+                  descriptors: Vec::new(),
+                  threads: Vec::new(),
+              }),
+          });
+          for inode in self.inner().descriptors.iter() {
+              process.inner().descriptors.push(inode.clone());
+          }
+          let cur_thread = PROCESSOR.lock().current_thread();
+          let inner = self.inner();
+          let memset = &inner.memory_set;
+          for thread in inner.threads.iter() {
+              let stack = process.alloc_page_from(
+                  thread.stack.start.0,
+                  STACK_SIZE,
+                  Flags::READABLE | Flags::WRITABLE
+              )?;
+              // TODO: How to copy thread's stack?
+              process.inner().memory_set.activate();
+              let pa_to = Mapping::lookup(stack.start).unwrap();
+              memset.activate();
+              for p in 0..STACK_SIZE {
+                  *PhysicalAddress(pa_to.0 + p).deref_kernel::<u8>()
+                      = *VirtualAddress(thread.stack.start.0 + p).deref::<u8>();
+              }
+              let new_context =
+                  if let Some(cur_context) = thread.inner().context { cur_context.clone() } else { context.clone() };
+              let sleeping = thread.inner().sleeping;
+              let dead = thread.inner().dead;
+              let new_thread = Arc::new(Thread {
+                  id: unsafe {
+                      THREAD_COUNTER += 1;
+                      THREAD_COUNTER
+                  },
+                  stack,
+                  process: process.clone(),
+                  inner: Mutex::new(ThreadInner {
+                      context: Some(new_context),
+                      sleeping,
+                      dead,
+                  }),
+              });
+              PROCESSOR.lock().add_thread(new_thread);
+          }
+          Ok(process)
+      }
+      ```
+
+      其它过程不多解释了，重点是复制线程栈的部分，为了复制过去我用了最麻烦的方法：先激活新进程的页表，获取新线程栈的物理地址，再切会就进程的页表，然后把旧线程的栈用虚拟地址复制给新线程栈的物理地址
+
+      不知道为什么会失败，部分报错内容为：
+
+      ```rust
+      Thread {
+          thread_id: 0x14,
+          stack: Range {
+              start: VirtualAddress(
+                  0x1200000,
+              ),
+              end: VirtualAddress(
+                  0x1280000,
+              ),
+          },
+          context: None,
+      } terminated: unimplemented interrupt type
+      cause: Exception(LoadPageFault), stval: 0
+      Thread {
+          thread_id: 0x10,
+          stack: Range {
+              start: VirtualAddress(
+                  0x1000000,
+              ),
+              end: VirtualAddress(
+                  0x1080000,
+              ),
+          },
+          context: None,
+      } terminated: unimplemented interrupt type
+      cause: Exception(StorePageFault), stval: 107fe58
+      ```
+
+      `stval` 为 0 的我怀疑是内存没复制好的问题，但是下面这个不知道有什么问题
