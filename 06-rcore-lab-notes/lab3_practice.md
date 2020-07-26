@@ -47,6 +47,34 @@
 
    参考答案没有分类讨论需要映射的地址是内核地址还是用户地址的问题
 
-4. **（实验框架尚未准备完善）** 实验：了解并实现时钟页面置换算法（或任何你感兴趣的算法），可以自行设计样例来比较性能
+4. 实验：了解并实现时钟页面置换算法（或任何你感兴趣的算法），可以自行设计样例来比较性能
 
-   看起来有点麻烦，要先实现虚拟存储，不过实验框架应该会准备好的
+   改进的 Clock 算法
+
+   - 思路
+     - 减少修改页的缺页处理开销
+   - 算法
+     - 在页面中增加修改位，并在访问时进行相应修改
+     - 缺页时，修改页面标志位，以跳过有修改的页面
+
+   实现过程挺简单的，只有 `pop` 略麻烦一点，需要检查 PTE 的标志位，被访问过或者被修改过则去掉其标志位，如果访问位(ACCESS)和修改位(DIRTY)都为 0，则替换该页
+
+   结果：FIFO 报出 `page_fault` 共 209 次，改进的 Clock 算法报出 `page_fault` 共 193 次
+
+   （好像也没改进多少嘛
+
+   另外再补充一下，编译的过程中我又遇到了之前见过的一种 error：
+
+   > \`*mut memory::mapping::page_table_entry::PageTableEntry\` cannot be sent between threads safely
+
+   下面提示需要
+
+   > required because of the requirements on the impl of \`core::marker::Send\` for ......
+
+   那么只需要为我们的 `ClockSwapper` 添加一行：
+
+   ```rust
+   unsafe impl Send for ClockSwapper {}
+   ```
+
+   error 就会消失了，虽然不知道是什么原理，但是这样就可以解决（
