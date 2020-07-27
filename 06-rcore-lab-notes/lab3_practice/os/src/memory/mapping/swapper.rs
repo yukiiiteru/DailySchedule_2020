@@ -83,9 +83,13 @@ impl Swapper for ClockSwapper {
         loop {
             let pte = self.vec[self.position].2;
             let flags = unsafe { pte.as_ref().unwrap().flags() };
-            if flags.contains(Flags::ACCESSED) || flags.contains(Flags::DIRTY) {
+            if flags.contains(Flags::ACCESSED) && flags.contains(Flags::DIRTY) {
+                let new_flags = flags & !Flags::ACCESSED;
+                unsafe { pte.as_mut().unwrap().set_flags(new_flags); }
+            }
+            else if flags.contains(Flags::ACCESSED) || flags.contains(Flags::DIRTY) {
                 let new_flags = flags & !Flags::ACCESSED & !Flags::DIRTY;
-                unsafe { pte.as_mut().unwrap().set_flags(new_flags) };
+                unsafe { pte.as_mut().unwrap().set_flags(new_flags); }
             } else {
                 let res = self.vec.remove(self.position);
                 return Some((res.0, res.1));

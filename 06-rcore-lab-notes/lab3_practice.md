@@ -67,6 +67,8 @@
 
    （好像也没改进多少嘛
 
+   **20200727补充**：今天突然发现漏了一种情况，补上之后还是缺页 193 次...
+
    另外再补充一下，编译的过程中我又遇到了之前见过的一种 error：
 
    > \`*mut memory::mapping::page_table_entry::PageTableEntry\` cannot be sent between threads safely

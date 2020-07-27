@@ -10,7 +10,7 @@
 |   6([D3][D3])   |   7([D4][D4])   |   8([D5][D5])   |   9([D6][D6])   |  10([D7][D7])   |  11([D8][D8])   |  12([D9][D9])   |
 | 13([D10][D10])  | 14([D11][D11])  | 15([D12][D12])  | 16([D13][D13])  | 17([D14][D14])  | 18([D15][D15])  | 19([D16][D16])  |
 | 20([D17][D17])  | 21([D18][D18])  | 22([D19][D19])  | 23([D20][D20])  | 24([D21][D21])  | 25([D22][D22])  | 26([D23][D23])  |
-| 27              | 28              | 29              | 30              |                 |                 |                 |
+| 27([D24][D24])  | 28              | 29              | 30              |                 |                 |                 |
 
 ---
 
@@ -1066,6 +1066,65 @@ Lab 3 不难，先 push 一发然后去开会，开完会继续折腾进程和�
 
 最晚后天就能公布名单了，我觉得有希望，所以这几天就赶快刷 zCore 了
 
+## Day 24 2020-07-27
+
+在 `rcore-os` 内搜索，突然发现了 `zCore-Tutorial`，赶紧来做一下试试先
+
+仓库地址：[zCore-Tutorial](https://github.com/rcore-os/zCore-Tutorial)
+
+文档地址：[简明 zCore 教程](https://rcore-os.github.io/zCore-Tutorial/)
+
+顺手帮改了点内容提交了 Pull Request，然后发现这文档就只有这一节，剩下的还是要靠我自己摸索了，不过还是有目录可以参考的，至少比没有要强
+
+刚才我又突然想看一下其他同学有没有人实现 `sys_fork`，去参考一下来着，结果发现只有一位同学实现了不太完整的 `fork`，其他同学做的都是 `sys_clone`
+
+我又在 zCore-Tutorial 里发现了 Zircon 和 Fuchsia 的中文文档，也可以先看那个
+
+* [zhangpf / fuchsia-docs-zh-CN](https://github.com/zhangpf/fuchsia-docs-zh-CN)
+
+也有点忘记微内核的概念了，查查维基百科先（
+
+[微内核 - 维基百科](https://zh.wikipedia.org/wiki/%E5%BE%AE%E5%85%A7%E6%A0%B8)
+
+* 微内核的定义：
+  * 在计算机科学中，微内核（英语：Microkernel，μ-kernel），是一种内核的设计架构，由尽可能精简的程序所组成，以实现一个操作系统所需要的最基本功能，包括了底层的定址空间管理、线程管理、与进程间通信。
+* 微内核的概念：
+  * 微核心的设计理念，是将系统服务的实现，与系统的基本操作规则区分开来。它实现的方式，是将核心功能模块化，划分成几个独立的行程，各自运行，这些行程被称为服务（service）。所有的服务行程，都运行在不同的地址空间。只有需要绝对特权的行程，才能在具特权的运行模式下运行，其余的行程则在用户空间运行。
+
+现在有点理解微内核，或者说 zCore 的设计理念了
+
+Zircon 是基于对象的内核，所以第一步是在内核中实现[内核对象](https://github.com/zhangpf/fuchsia-docs-zh-CN/blob/master/zircon/docs/objects.md)
+
+实现对象后再实现[进程](https://github.com/zhangpf/fuchsia-docs-zh-CN/blob/master/zircon/docs/objects/process.md)，然后实现进程间通讯，如
+[Channel](https://github.com/zhangpf/fuchsia-docs-zh-CN/blob/master/zircon/docs/objects/channel.md)
+[Socket](https://github.com/zhangpf/fuchsia-docs-zh-CN/blob/master/zircon/docs/objects/socket.md)
+[FIFO](https://github.com/zhangpf/fuchsia-docs-zh-CN/blob/master/zircon/docs/objects/fifo.md)
+
+之后再逐步实现[线程](https://github.com/zhangpf/fuchsia-docs-zh-CN/blob/master/zircon/docs/objects/thread.md)
+[作业](https://github.com/zhangpf/fuchsia-docs-zh-CN/blob/master/zircon/docs/objects/job.md)
+[任务](https://github.com/zhangpf/fuchsia-docs-zh-CN/blob/master/zircon/docs/objects/task.md)
+
+接着是内存管理，要实现[虚拟内存对象(VMO)](https://github.com/zhangpf/fuchsia-docs-zh-CN/blob/master/zircon/docs/objects/vm_object.md)
+[虚拟内存地址区域(VMAR)](https://github.com/zhangpf/fuchsia-docs-zh-CN/blob/master/zircon/docs/objects/vm_address_region.md)
+
+（这里有点疑惑，为什么不先实现内存管理再实现进程呢）
+
+有了以上的基础，就可以上用户程序并实现外核了
+
+（看到进程的系统调用没有 `fork` 之后松了一口气）
+
+不过我还是不明白真正的用户程序应该怎么向外核申请服务
+
+逛 GitHub 的过程中还偶然发现了潘庆霖学长的 [zircon-notes](https://github.com/PanQL/zircon-notes)，一会读一下
+
+有点看不懂...
+
+今天就先到这，等明天出结果！
+
+### Day25 计划
+
+读 zCore 代码吧，从 `main.rs` 开始跟踪，不过运行不起来是个大问题 emmm
+
 ---
 
 [D0]: #day-0-2020-07-03
@@ -1092,3 +1151,4 @@ Lab 3 不难，先 push 一发然后去开会，开完会继续折腾进程和�
 [D21]: #day-21-2020-07-24
 [D22]: #day-22-2020-07-25
 [D23]: #day-23-2020-07-26
+[D24]: #day-24-2020-07-27
