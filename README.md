@@ -4,13 +4,13 @@
 
 七月
 
-|       Mon       |       Tue       |       Wed       |       Thu       |       Fri       |       Sat       |       Sun       |
-|-----------------|-----------------|-----------------|-----------------|-----------------|-----------------|-----------------|
-|                 |                 |        1        |        2        |   3([D0][D0])   |   4([D1][D1])   |   5([D2][D2])   |
-|   6([D3][D3])   |   7([D4][D4])   |   8([D5][D5])   |   9([D6][D6])   |  10([D7][D7])   |  11([D8][D8])   |  12([D9][D9])   |
-| 13([D10][D10])  | 14([D11][D11])  | 15([D12][D12])  | 16([D13][D13])  | 17([D14][D14])  | 18([D15][D15])  | 19([D16][D16])  |
-| 20([D17][D17])  | 21([D18][D18])  | 22([D19][D19])  | 23([D20][D20])  | 24([D21][D21])  | 25([D22][D22])  | 26([D23][D23])  |
-| 27([D24][D24])  | 28              | 29              | 30              |                 |                 |                 |
+|    Mon    |    Tue    |    Wed    |    Thu    |    Fri    |    Sat    |    Sun    |
+|-----------|-----------|-----------|-----------|-----------|-----------|-----------|
+|           |           |     1     |     2     |  3([D0])  |  4([D1])  |  5([D2])  |
+|  6([D3])  |  7([D4])  |  8([D5])  |  9([D6])  | 10([D7])  | 11([D8])  | 12([D9])  |
+| 13([D10]) | 14([D11]) | 15([D12]) | 16([D13]) | 17([D14]) | 18([D15]) | 19([D16]) |
+| 20([D17]) | 21([D18]) | 22([D19]) | 23([D20]) | 24([D21]) | 25([D22]) | 26([D23]) |
+| 27([D24]) | 28([D25]) | 29        | 30        |           |           |           |
 
 ---
 
@@ -1125,6 +1125,188 @@ Zircon 是基于对象的内核，所以第一步是在内核中实现[内核对
 
 读 zCore 代码吧，从 `main.rs` 开始跟踪，不过运行不起来是个大问题 emmm
 
+## Day 25 2020-07-28
+
+从 `zCore/src/main.rs` 跟踪到 `zircon-loader/src/main.rs`，然后到 `zircon-object/src/lib.rs`，进一步跟踪到 `zircon-object/src/object/mod.rs`，找到了 zCore-Tutorial 里介绍的对象，代码几乎完全一致，就从这开始好了
+
+* 第一步，在 `zircon-object/src/object/mod.rs` 中创建了 `KObjectBase` 对象：
+
+  ```rust
+  /// The base struct of a kernel object.
+  pub struct KObjectBase {
+      /// The object's KoID.
+      pub id: KoID,
+      inner: Mutex<KObjectBaseInner>,
+  }
+
+  /// The mutable part of `KObjectBase`.
+  #[derive(Default)]
+  struct KObjectBaseInner {
+      name: String,
+      signal: Signal,
+      signal_callbacks: Vec<SignalHandler>,
+  }
+  ```
+
+  之后的所有对象（如进程）都*算是* `KObjectBase` 的子类，不过在 Rust 中没有继承，而是使用了 trait `KernelObject` 和宏 `impl_kobject` 来模拟继承
+
+* 第二步，创建对象管理器：Process 对象
+
+  * 参考 zCore-Tutorial 的目录，首先建立了句柄的概念，代码位于 `zircon-object/src/object/handle.rs`：
+  
+    ```rust
+    /// A Handle is how a specific process refers to a specific kernel object.
+    #[derive(Debug, Clone)]
+    pub struct Handle {
+        /// The object referred to by the handle.
+        pub object: Arc<dyn KernelObject>,
+        /// The handle's associated rights.
+        pub rights: Rights,
+    }
+    ```
+  
+    按照字面意思，句柄是进程引用对象的标识符，它指向一个内核对象，还包含一个权限
+  
+    权限定义在 `zircon-object/src/object/rights.rs` 中，这里不再细讲
+  
+  * 下一项工作的代码位于 `zircon-object/src/task/process.rs`，在这里建立了进程的概念：
+  
+    ```rust
+    pub struct Process {
+        base: KObjectBase,
+        _counter: CountHelper,
+        job: Arc<Job>,
+        policy: JobPolicy,
+        vmar: Arc<VmAddressRegion>,
+        ext: Box<dyn Any + Send + Sync>,
+        exceptionate: Arc<Exceptionate>,
+        debug_exceptionate: Arc<Exceptionate>,
+        inner: Mutex<ProcessInner>,
+    }
+  
+    #[derive(Default)]
+    struct ProcessInner {
+        status: Status,
+        max_handle_id: u32,
+        handles: HashMap<HandleValue, (Handle, Vec<Sender<()>>)>,
+        futexes: HashMap<usize, Arc<Futex>>,
+        threads: Vec<Arc<Thread>>,
+  
+        // special info
+        debug_addr: usize,
+        dyn_break_on_load: usize,
+        critical_to_job: Option<(Arc<Job>, bool)>,
+    }
+    ```
+
+    > Zircon 的进程是传统意义上程序的实例：由一个或多个线程执行的一组指令以及相关的资源集合组成。
+    >
+    > A zircon process is an instance of a program in the traditional sense: a set of instructions which will be executed by one or more threads, along with a collection of resources.
+  
+    进程中包含许多信息，现在先不深究了吧
+  
+  * 进程的第一件工作是存储内核对象句柄：
+  
+    ```rust
+    impl ProcessInner {
+        /// Add a handle to the process
+        fn add_handle(&mut self, handle: Handle) -> HandleValue {
+            // FIXME: handle value from ptr
+            let key = (self.max_handle_id << 2) | 0x3u32;
+            info!("add handle: {:#x}, {:?}", key, handle.object);
+            self.max_handle_id += 1;
+            self.handles.insert(key, (handle, Vec::new()));
+            key
+        }
+    }
+    ```
+  
+    进程还包含 虚拟内存地址区域(Virtual Memory Address Regions) 和 线程(Threads)，这个暂时先不讨论
+  
+  * 进程的下一项工作是根据句柄查找内核对象，这一步没有找到具体的代码，但是结合上述内容很容易理解：
+  
+    一个句柄对应着一个对象，将句柄存储到进程的 `handlers` 中，使用 `HandleValue` 作为标识符，根据 `HandleValue` 可以找到 `Handle` 进而找到其对应的 `KernelObject`
+
+* 第三步：创建对象传送器：Channel 对象
+
+  * Channel 对象位于 `zircon-object/src/ipc/channel.rs`
+  
+    这里的 IPC 指的是进程间通信(Inter-Process Communication)，而 Channel 是一种可以使进程间进行双向通信的对象：
+
+    ```rust
+    /// Bidirectional interprocess communication
+    pub struct Channel {
+        base: KObjectBase,
+        _counter: CountHelper,
+        peer: Weak<Channel>,
+        recv_queue: Mutex<VecDeque<T>>,
+        call_reply: Mutex<HashMap<TxID, Sender<ZxResult<T>>>>,
+        next_txid: AtomicU32,
+    }
+    ```
+
+    > Channel 维护了一个有序的消息队列，以便在任一方向上传递由一些数据和句柄组成的消息。
+    >
+    > Channels maintain an ordered queue of messages to be delivered in either direction. A message consists of some amount of data and some number of handles.
+
+    用于进程间通信(IPC)的对象还有 Socket, FIFO，在这里先略过
+
+    Channel 首先需要创建一对内核对象，这样才可以在这一对内核对象之间传输信息：
+
+    ```rust
+    impl Channel {
+        /// Create a channel and return a pair of its endpoints
+        #[allow(unsafe_code)]
+        pub fn create() -> (Arc<Self>, Arc<Self>) {
+            let mut channel0 = Arc::new(Channel {
+                base: KObjectBase::with_signal(Signal::WRITABLE),
+                _counter: CountHelper::new(),
+                peer: Weak::default(),
+                recv_queue: Default::default(),
+                call_reply: Default::default(),
+                next_txid: AtomicU32::new(0x8000_0000),
+            });
+            let channel1 = Arc::new(Channel {
+                base: KObjectBase::with_signal(Signal::WRITABLE),
+                _counter: CountHelper::new(),
+                peer: Arc::downgrade(&channel0),
+                recv_queue: Default::default(),
+                call_reply: Default::default(),
+                next_txid: AtomicU32::new(0x8000_0000),
+            });
+            // no other reference of `channel0`
+            unsafe {
+                Arc::get_mut_unchecked(&mut channel0).peer = Arc::downgrade(&channel1);
+            }
+            (channel0, channel1)
+        }
+    }
+    ```
+
+    这一步看代码很容易理解，不再赘述
+  
+  * 下一项任务则是实现数据传输了
+
+    数据传输相关的方法好多，有 `check_and_read`，`read`，`write`，`call`，`push_general`
+
+    * `check_and_read`：读数据，顺便加上一个 `checker` 函数
+    * `read`：读数据，`checker` 函数已经写好了，不用再写
+    * `write`：发送一个数据包
+    * `call`：发送一条消息并等待回应
+    * `push_general`：将消息发送到队列，然后 called from peer. （这句话没看懂，翻译了一下，结果是：“从对等方调用”，还是不太懂）
+
+### Day26 计划
+
+rCore-Tutorial 的副标题就写到这，剩下的只能啃大标题和 Fuchsia 的文档了
+
+今天就先到这，明天开始任务管理！
+
+估计明天进度会更慢...拿代码和文档的大标题什么的自己摸索...
+
+另外
+
+接到老师的电话了！我通过了！
+
 ---
 
 [D0]: #day-0-2020-07-03
@@ -1152,3 +1334,4 @@ Zircon 是基于对象的内核，所以第一步是在内核中实现[内核对
 [D22]: #day-22-2020-07-25
 [D23]: #day-23-2020-07-26
 [D24]: #day-24-2020-07-27
+[D25]: #day-25-2020-07-28
