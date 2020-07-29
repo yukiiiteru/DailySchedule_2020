@@ -10,7 +10,7 @@
 |  6([D3])  |  7([D4])  |  8([D5])  |  9([D6])  | 10([D7])  | 11([D8])  | 12([D9])  |
 | 13([D10]) | 14([D11]) | 15([D12]) | 16([D13]) | 17([D14]) | 18([D15]) | 19([D16]) |
 | 20([D17]) | 21([D18]) | 22([D19]) | 23([D20]) | 24([D21]) | 25([D22]) | 26([D23]) |
-| 27([D24]) | 28([D25]) | 29        | 30        |           |           |           |
+| 27([D24]) | 28([D25]) | 29([D26]) | 30        |           |           |           |
 
 ---
 
@@ -1295,6 +1295,8 @@ Zircon 是基于对象的内核，所以第一步是在内核中实现[内核对
     * `call`：发送一条消息并等待回应
     * `push_general`：将消息发送到队列，然后 called from peer. （这句话没看懂，翻译了一下，结果是：“从对等方调用”，还是不太懂）
 
+    **20200729补充**：我觉得 `push_general` 应该是“被 `peer` 调用”，`peer` 不用翻译
+
 ### Day26 计划
 
 rCore-Tutorial 的副标题就写到这，剩下的只能啃大标题和 Fuchsia 的文档了
@@ -1306,6 +1308,227 @@ rCore-Tutorial 的副标题就写到这，剩下的只能啃大标题和 Fuchsia
 另外
 
 接到老师的电话了！我通过了！
+
+## Day 26 2020-07-29
+
+zCore-Tutorial 文档第二章 “任务管理” 的第一节是 “Zircon 任务管理体系”，然而这个 zCore-Tutorial 文档还没有写，而 Fuchsia 文档里也没有介绍，只有具体的对 `Process`, `Thread`, `Job`, `Task` 的介绍
+
+先啃 `Job` 和 `Task` 吧
+
+* Zircon 任务管理体系
+
+  * `Job`：控制一组进程
+
+    > 概要：作业是一组进程，以及其它可能的（子）作业的集合。作业用于追踪用于执行内核操作的权限（即使用各种选项进行各种系统调用），并追踪和限制基本资源（例如，内存和CPU）的消耗。 每个进程都属于一个作业中。作业也可以相互嵌套，除根作业之外的每个作业也属于某个单个（父）作业。
+    >
+    > 描述：作业是由以下内容组成的对象
+    >
+    > * 指向父作业的引用
+    > * 一组子作业（每个子作业都以本作业作为其父作业）
+    > * 一组进程
+    > * 一组策略（未实现）
+    >
+    > 作业控制“应用程序”由作为单个项被控制的多个进程所组成。
+
+    以下为 `Job` 的定义：
+
+    ```rust
+    #[allow(dead_code)]
+    pub struct Job {
+        base: KObjectBase,
+        _counter: CountHelper,
+        parent: Option<Arc<Job>>,
+        parent_policy: JobPolicy,
+        exceptionate: Arc<Exceptionate>,
+        debug_exceptionate: Arc<Exceptionate>,
+        inner: Mutex<JobInner>,
+    }
+
+    #[derive(Default)]
+    struct JobInner {
+        policy: JobPolicy,
+        children: Vec<Arc<Job>>,
+        processes: Vec<Arc<Process>>,
+        // if the job is killed, no more child creation should works
+        killed: bool,
+        timer_policy: TimerSlack,
+    }
+    ```
+
+    可以看到，在 `JobInner` 里面包含了一个 `processes: Vec<Arc<Process>>` 的结构，但是我并没有找到有关运行进程或线程的功能，看来如概要所说，只能进行追踪和限制资源消耗了，而限制功能应该是由 `policy` 来管理的
+  
+  * `Task`：内核对象中的“可运行”子类（包括线程，进程和作业）
+
+    > 概要：线程，进程和作业对象都是任务类型。他们都具有被挂起，恢复和终止的能力。
+
+    以下为 `Task` 的定义：
+
+    ```rust
+    /// Task (Thread, Process, or Job)
+    pub trait Task: Sync + Send {
+        /// Kill the task.
+        fn kill(&self);
+
+        /// Suspend the task. Currently only thread or process handles may be suspended.
+        fn suspend(&self);
+
+        /// Resume the task
+        fn resume(&self);
+    }
+    ```
+
+    看起来 `Task` 只是一个抽象的 `trait`，并不是一个具体的 `struct`，而具有该 `trait` 的对象则具有被挂起、恢复、终止的功能
+
+* 硬件抽象层与异步运行时
+
+  这个指的是 `zCore/kernel-hal-bare` 和 `zCore/kernel-hal-unix` 吧，没有文档可读，暂时先跳过
+
+* 线程管理：Thread 对象
+
+  > 线程，即可运行/计算实体
+  >
+  >描述：线程对象是表示分时CPU执行上下文的概念。 线程对象与特定的进程对象相关联，进程为其他对象所需的I/O和计算提供内存和句柄。
+  >
+  > 线程的生命周期始于 `Thread::start()` 或 `Process::start()`，而终止的方式有：
+  >
+  > * 调用 `Thread::exit()`
+  > * 父进程终止
+  > * 调用 `Task::kill()`
+  > * 产生异常
+  > * (Fuchsia) 通过调用 `zx_vmar_unmap_handle_close_thread_exit()`
+  > * (Fuchsia) 通过调用 `zx_futex_wake_handle_close_thread_exit()`
+
+  线程的定义为：
+
+  ```rust
+  pub struct Thread {
+      base: KObjectBase,
+      _counter: CountHelper,
+      proc: Arc<Process>,
+      ext: Box<dyn Any + Send + Sync>,
+      inner: Mutex<ThreadInner>,
+      exceptionate: Arc<Exceptionate>,
+  }
+
+  #[derive(Default)]
+  struct ThreadInner {
+      /// Thread context
+      ///
+      /// It will be taken away when running this thread.
+      context: Option<Box<UserContext>>,
+
+      /// The number of existing `SuspendToken`.
+      suspend_count: usize,
+      /// The waker of task when suspending.
+      waker: Option<Waker>,
+      /// A token used to kill blocking thread
+      killer: Option<Sender<()>>,
+      /// Thread state
+      ///
+      /// NOTE: This variable will never be `Suspended`. On suspended, the
+      /// `suspend_count` is non-zero, and this represents the state before suspended.
+      state: ThreadState,
+      /// The currently processing exception
+      exception: Option<Arc<Exception>>,
+      /// The time this thread has run on cpu
+      time: u128,
+      flags: ThreadFlag,
+  }
+  ```
+
+  下面还定义了 `impl Task for Thread {}`，表明 `Thread` 是一种 `Task`
+
+* 进程管理：Process 与 Job 对象
+
+  `Process` 与 `Job` 在上面都讲过了，但是不知道怎么结合起来进行进程管理...
+
+  毕竟 `Job` 没有启动进程的功能，只有添加删除进程的功能，如 `add_process`，`remove_process`，可能这就是所谓的进程管理...?
+
+下面是 zCore-Tutorial 第三章的内容
+
+* Zircon 内存管理模型
+
+  这一节大概就是介绍 VMO 对象 和 VMAR 对象吧，不知道该怎么大体介绍，放到后面几节详细讲讲
+
+* 物理内存：VMO 对象
+
+  > Virtual Memory Object（虚拟内存对象）
+  >
+  > 名称：vm_object —— 虚拟内存的容器抽象
+  >
+  > 概要：虚拟内存对象（VMO）表示可以映射到多个地址空间的虚拟内存连续区域。
+  >
+  > 描述：内核和用户空间使用VMO来表示分页和物理内存。它们是在进程之间以及内核和用户空间之间共享内存的标准方法。
+
+  代码位于 `zircon-object/vm/vmo/mod.rs`，其定义为：
+
+  ```rust
+  pub struct VmObject {
+      base: KObjectBase,
+      parent: Mutex<Weak<VmObject>>, // Parent could be changed
+      children: Mutex<Vec<Weak<VmObject>>>,
+      _counter: CountHelper,
+      resizable: bool,
+      inner: Arc<dyn VMObjectTrait>,
+  }
+  ```
+
+  还定义了一个 `VMObjectTrait` 的特性，太长了就先不放代码了
+
+  然后...道理我都懂，但是管理*物理内存*的对象为什么要叫作*虚拟内存对象*？是把物理内存抽象出来的吗？
+
+  在 `zircon-object/vm/vmo/physical.rs` 中定义了 `VMObjectPhysical`：
+
+  ```rust
+  /// VMO representing a physical range of memory.
+  pub struct VMObjectPhysical {
+      paddr: PhysAddr,
+      pages: usize,
+      /// Lock this when access physical memory.
+      data_lock: Mutex<()>,
+      inner: Mutex<VMObjectPhysicalInner>,
+  }
+  ```
+
+  该结构体实现了 `VMObjectTrait` 特性，可以放入 `VmObject` 中的 `inner`，是跟这个有关吗？
+
+  还有，在 `zircon-object/vm/vmo/paged.rs` 中定义了 `VMObjectPaged`：
+
+  ```rust
+  /// The main VM object type, holding a list of pages.
+  pub struct VMObjectPaged {
+      /// The lock that protected the `inner`
+      /// This lock is shared between objects in the same clone tree to avoid deadlock
+      lock: Arc<Mutex<()>>,
+      inner: RefCell<VMObjectPagedInner>,
+  }
+  ```
+
+* 虚拟内存：VMAR 对象
+
+  明天再写  
+
+### Day26 碎碎念
+
+我家在山东某小县城，附近没有机场，只能去济南遥墙机场坐飞机，而开车去机场要两三个小时
+
+从济南出发，三个小时左右就能到深圳，但是我没有自己坐过飞机，要去机场摸索很久，还要提前上飞机，大概要提前两个小时到机场
+
+从机场去鹏城实验室，坐地铁的话大概要一个小时多一点
+
+那么我从家到实验室的话，总时间至少要九个小时了，总觉得8月2日出发有点来不及，还是8月1日出发好了，还能提前在深圳转一转，熟悉一下环境
+
+说起来，我好像还有几个朋友在深圳
+
+一个是我之前 ACM 的队友，一起在省赛拿过参与奖，他现在在腾讯工作，而我找不到工作选择考研，我好惨
+
+还有一个是初中时跟我住同一个小区，一起坐公交上学认识的朋友，看朋友圈好像现在也是在深圳工作的样子
+
+不过都好久没有联系了，贸然去联系可能会有点尴尬，就先算了（？
+
+### Day27 计划
+
+继续啃 zCore 代码！
 
 ---
 
@@ -1335,3 +1558,4 @@ rCore-Tutorial 的副标题就写到这，剩下的只能啃大标题和 Fuchsia
 [D23]: #day-23-2020-07-26
 [D24]: #day-24-2020-07-27
 [D25]: #day-25-2020-07-28
+[D26]: #day-26-2020-07-29
