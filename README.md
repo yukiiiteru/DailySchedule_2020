@@ -1185,6 +1185,24 @@ rCore-Tutorial 的副标题就写到这，剩下的只能啃大标题和 Fuchsia
 
 现在就想参与 Contribution，但是奈何 zCore 运行不起来...
 
+## Day 28 2020-07-31
+
+再折腾会 uCore 先，之前答应向勇老师写 uCore 分析文档，咕了好久才写到 Lab 2，趁现在有空再写一篇（
+
+更新文档的时候发现报了莫名其妙的错误，网上查了下才知道我的 ArchLinux 把 NodeJS 给更到最新了，而最新版不向下兼容一些包
+
+我突然想到有个好东西叫 Github Actions，试了一下，但是发现，在老师配置的 GitHub Pages 上整 GitHub Actions 的自动部署好麻烦，于是查降级 NodeJS 的方法，无果，最后找到了如下解决方案：
+
+```bash
+sudo pacman -S nodejs-lts-dubnium
+```
+
+这样是安装 NodeJS 的 LTS 也就是长期支持版，也相当于降级了
+
+另外，偶然发现了 [zCore 的文档](https://rcore-os.github.io/zCore/zircon_object/)，虽然好像是 `cargo` 自动生成的，不过读起来也会方便一些吧
+
+今天就先到这，该把电脑收拾起来了，明天出发去深圳！
+
 ---
 
 [D0]: #day-0-2020-07-03
@@ -1215,3 +1233,4 @@ rCore-Tutorial 的副标题就写到这，剩下的只能啃大标题和 Fuchsia
 [D25]: #day-25-2020-07-28
 [D26]: #day-26-2020-07-29
 [D27]: #day-27-2020-07-30
+[D28]: #day-28-2020-07-31
