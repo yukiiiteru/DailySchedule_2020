@@ -1302,6 +1302,106 @@ git lfs pull
 
 今天 push 一发先（
 
+对了，忘了说，我的选题是：rCore 到 zCore 的功能迁移
+
+我整理了一下 zCore 缺失的，rCore 已经实现的系统调用：[syscall.md](07-zcore-notes/syscall.md)
+
+此外，我发现把 gcc 和 rustc 直接复制到 `rootfs/bin` 里面，并把库直接复制到 `rootfs/lib` 里面仍然无法运行，会报段错误
+
+我认为需要重新编译，让 gcc 和 rustc 动态链接到 `/lib/ld-musl-x86_64.so.1` 上或者其它库上才可以（？
+
+去参考一下 rCore 先（
+
+我在 [rcore-user](https://github.com/rcore-os/rCore-user) 发现了 `musl-gcc` 的下载地址，不过也要下载好久
+
+找到 `musl-x86_64-gcc`，`file` 一下，发现是静态链接的，直接解决掉一个大问题x
+
+此外我发现 rCore 中的 nginx 也是静态链接的，不过没有找到 rustc 或者 rustup
+
+~~我是分隔线~~
+
+今天下午开会，听得我想学 Chisel 了（
+
+记录一下以后可能需要的东西
+
+> 处理器在线差分测试仿真验证-原理
+>
+> * 基于指令级在线比对验证框架
+>   * 模拟器作为动态链接库连接到 Verilator 生成的仿真程序中
+>   * 处理器在指令完成时发出比对请求
+>   * 在比对结果不一致时报错并试试当前处理器状态
+
+使用的模拟器：nemu
+
+> 流片前开发
+>
+> * 系统软件
+>   * Nanos-lite
+>   * FreeRTOS
+>   * RT-thread
+>   * xv6
+>   * Linux kernel
+>   * Debian
+
+dalao 提醒：
+
+1. xv6 是跑在 qemu 上的，不刷 TLB，如果跑在硬件上需要加上 `sfence.vma`
+2. 跨页的 4 字节指令非常恶心，指令未对齐，前两个字节跟后两个字节不在同一个页面，容易出各种莫名其妙的 bug
+3. 给低年级同学的建议：
+   1. 基础设施很重要（如 nemu）
+   2. 系统能力很重要
+   3. 学会敏捷开发，学会版本管理
+
+~~我是分隔线~~
+
+我觉得 zCore 的系统调用问题不大，不过 zCore 我不知道该怎么 debug，不能 `println`，用 `log` 输出不出来，不会用 GDB 单步跟踪，加上 `RUST_BACKTRACE=1` 之后关键位置不输出行号，就很难受
+
+经过 Google，我学会了用 GDB 单步跟踪 cargo 编译出的程序，然后终于定位到问题所在了：
+
+因为 gcc 没有 `.rela.dyn` 段，而目前 zCore 只能运行有 `.rela.dyn` 段的程序
+
+我又查了一下，似乎只有动态链接的程序才有 `.rela.dyn` 段，而静态链接的程序没有
+
+那么移植的 gcc 的问题就转化成了：让 zCore 支持静态链接的程序
+
+我把出问题的那行改掉了（其实注释掉那行也可以）：
+
+```rust
+// before
+elf.relocate(base).map_err(|_| ZxError::INVALID_ARGS)?;
+
+// after
+if let Ok(()) = elf.relocate(base) {}
+```
+
+这样可以让需要使用 `.rela.dyn` 段重定位的程序重定位，不需要的也不会报错
+
+那么 `cargo run`，好了，段错误，问题又回到原来的位置了...
+
+但是并不影响 busybox 的运行，这是好的
+
+~~我是分隔线~~
+
+今晚王润基学长的 zCore 讲解
+
+> Rust 工程项目实践经验
+>
+> * 代码质量控制：`cargo fmt` + `cargo clippy`
+> * 文档和单元测试：`cargo doc` + `cargo test` + `grcov`
+> * crate 的拆分和发布流程：`cargo publish`
+> * 持续集成和自动测试：GitHub Actions
+> * 社区合作开发：GitHub issue + PR
+
+~~我是分隔线~~
+
+经过单步调试，我发现现在代码又卡在 `thread.start`，但是这次比较奇怪，这次是在返回 `Ok(())` 的地方段错误的，就很迷
+
+经洛佳 dalao 提示，可能需要跟踪一下栈，也可以用 stepi 跟踪一下
+
+今天就到这，push 一发走人
+
+晚安
+
 ---
 
 [D0]: #day-0-2020-07-03
