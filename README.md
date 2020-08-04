@@ -17,7 +17,7 @@
 |    Mon    |    Tue    |    Wed    |    Thu    |    Fri    |    Sat    |    Sun    |
 |-----------|-----------|-----------|-----------|-----------|-----------|-----------|
 |           |           |           |           |           |  1([D29]) |  2([D30]) |
-|  3([D31]) |  4        |  5        |  6        |  7        |  8        |  9        |
+|  3([D31]) |  4([D32]) |  5        |  6        |  7        |  8        |  9        |
 | 10        | 11        | 12        | 13        | 14        | 15        | 16        |
 | 17        | 18        | 19        | 20        | 21        | 22        | 23        |
 | 24        | 25        | 26        | 27        | 28        | 29        | 30        |
@@ -1242,6 +1242,66 @@ sudo pacman -S nodejs-lts-dubnium
 
 今天一早起床来到鹏城吃早饭，吃完饭现在在 1604 等开会，顺手更新然后 push 一下，下一次更新就是晚上咯
 
+另外，经过郑权同学的指导，我 clone 下来的 zCore 终于能正确执行了，但是 Busybox 和 Zircon shell 还是会报错，这个不知道该怎么解决了
+
+在 zCore 的文档里是这么写的：
+
+> Clone repo and pull prebuilt fuchsia images:
+>
+> ```sh
+> git clone https://github.com/rcore-os/zCore --recursive
+> cd zCore
+> git lfs pull
+> ```
+
+但事实上需要执行的是
+
+```sh
+git clone https://github.com/rcore-os/zCore --recursive
+cd zCore
+git lfs pull
+cd zCore
+git lfs pull
+```
+
+第一步 `cd` 是进入 clone 下来的 `zCore` 目录，第二步 `cd` 是进入 `zCore/zCore` 目录，然后这里还要再 `git lfs pull` 一下才可以
+
+**20200803下午补充**：我把 zCore 目录给删掉然后重新 clone 一遍，突然就能正常跑了，Busybox 可以正常运行，Zircon shell 会报段错误，zCore 可以正常运行
+
+又重新 clone 了一下，照原来的文档就可以运行...我怀疑是 `git lfs pull` 的问题...
+
+此外，向老师建议我们参考：[2020操作系统课程设计：为 rCore 实现更多 Linux 系统调用](http://os.cs.tsinghua.edu.cn/oscourse/OS2020spring/projects/g02)
+
+我在里面找到了 [方案设计报告幻灯片.pdf](http://os.cs.tsinghua.edu.cn/oscourse/OS2020spring/projects/g02?action=AttachFile&do=view&target=%E6%96%B9%E6%A1%88%E8%AE%BE%E8%AE%A1%E6%8A%A5%E5%91%8A%E5%B9%BB%E7%81%AF%E7%89%87.pdf)
+
+> 工作计划按如下顺序开展：
+>
+> * 完善对 gcc 的支持，测试 C/C++ 标准库实现
+> * 支持make，使 rCore 具备从源码安装软件的能力
+>   * 还可考虑支持 CMake
+> * 支持 Git
+> * 支持 Rust 工具链，主要包括：
+>   * rustc
+>   * cargo
+>   * 测试 rust 标准库实现
+> * 支持更多的编辑器
+>   * nano
+>   * vim
+
+首先需要把 gcc 编译出来，放到 `rootfs/bin` 里面，然后补全系统调用
+
+执行了一下 `file`，发现 `busybox` 是 x86 架构，可以直接用 gcc 编译 gcc 放里面去
+
+然后我尝试 clone 一下 gcc 的仓库，发现里面现在有 242 万多个文件，clone 就要好久了，向老师说光 gcc 的和 gcc 需要的库就能覆盖 Linux 的所有系统调用，我觉得一点也不夸张...
+
+不过 rustc 和 cargo 不知道该怎么移植，直接把二进制复制粘贴过去吗？依赖的库也是这样吗？
+
+## Day 32 2020-08-04
+
+昨天聚餐，晚上没带电脑回去，所以没法 push
+
+今天 push 一发先（
+
 ---
 
 [D0]: #day-0-2020-07-03
@@ -1276,3 +1336,4 @@ sudo pacman -S nodejs-lts-dubnium
 [D29]: #day-29-2020-08-01
 [D30]: #day-30-2020-08-02
 [D31]: #day-31-2020-08-03
+[D32]: #day-32-2020-08-04
