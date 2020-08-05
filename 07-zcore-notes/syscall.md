@@ -5,11 +5,44 @@
 - [ ] `SYS_FLOCK`
 - [ ] `SYS_SYMLINKAT`
 - [ ] `SYS_UTIMENSAT`
+- [ ] `SYS_PSELECT6`
+- [ ] `SYS_PPOLL`
+- [ ] `SYS_EPOLL_CREATE`
+- [ ] `SYS_EPOLL_CTL`
+- [ ] `SYS_EPOLL_PWAIT`
 - [ ] `SYS_RT_SIGACTION`
 - [ ] `SYS_RT_SIGPROCMASK`
 - [ ] `SYS_SIGALTSTACK`
+- [ ] `SYS_SCHED_YIELD`
+- [ ] `SYS_SCHED_GETAFFINI`
+- [ ] `SYS_SOCKET`
+- [ ] `SYS_CONNECT`
+- [ ] `SYS_ACCEPT`
+- [ ] `SYS_ACCEPT4`
+- [ ] `SYS_SENDTO`
+- [ ] `SYS_RECVFROM`
+- [ ] `SYS_RECVMSG`
+- [ ] `SYS_SHUTDOWN`
+- [ ] `SYS_BIND`
+- [ ] `SYS_LISTEN`
+- [ ] `SYS_GETSOCKNAME`
+- [ ] `SYS_GETPEERNAME`
+- [ ] `SYS_SETSOCKOPT`
+- [ ] `SYS_GETSOCKOPT`
 - [ ] `SYS_TKILL`
+- [ ] `SYS_SEMGET`
+- [ ] `SYS_SEMOP`
+- [ ] `SYS_SEMCTL`
+- [ ] `SYS_GETRUSAGE`
+- [ ] `SYS_SYSINFO`
+- [ ] `SYS_TIMES`
+- [ ] `SYS_SETPRIORITY`
+- [ ] `SYS_PRLIMIT64`
+- [ ] `SYS_REBOOT`
+- [x] `SYS_GETRANDOM`
 - [ ] `SYS_RT_SIGQUEUEINFO`
+- [ ] `SYS_INIT_MODULE`
+- [ ] `SYS_DELETE_MODULE`
 - [ ] `SYS_DUP2`
 
 ## rCore 所有系统调用
@@ -57,11 +90,11 @@
 - [ ] ~~`SYS_GET_ROBUST_LIST`~~
 - [ ] `SYS_UTIMENSAT`
 - [x] `SYS_COPY_FILE_RANGE`
-- [x] `SYS_PSELECT6`
-- [x] `SYS_PPOLL`
-- [x] `SYS_EPOLL_CREATE`
-- [x] `SYS_EPOLL_CTL`
-- [x] `SYS_EPOLL_PWAIT`
+- [ ] `SYS_PSELECT6`
+- [ ] `SYS_PPOLL`
+- [ ] `SYS_EPOLL_CREATE`
+- [ ] `SYS_EPOLL_CTL`
+- [ ] `SYS_EPOLL_PWAIT`
 - [ ] ~~`SYS_EVENTFD2`~~
 - [ ] ~~`SYS_SOCKETPAIR`~~
 - [ ] ~~`SYS_STATFS`~~
@@ -79,22 +112,22 @@
 - [ ] `SYS_RT_SIGPROCMASK`
 - [ ] `SYS_SIGALTSTACK`
 - [x] `SYS_KILL`
-- [x] `SYS_SCHED_YIELD`
-- [x] `SYS_SCHED_GETAFFINI`
-- [x] `SYS_SOCKET`
-- [x] `SYS_CONNECT`
-- [x] `SYS_ACCEPT`
-- [x] `SYS_ACCEPT4`
-- [x] `SYS_SENDTO`
-- [x] `SYS_RECVFROM`
-- [x] `SYS_RECVMSG`
-- [x] `SYS_SHUTDOWN`
-- [x] `SYS_BIND`
-- [x] `SYS_LISTEN`
-- [x] `SYS_GETSOCKNAME`
-- [x] `SYS_GETPEERNAME`
-- [x] `SYS_SETSOCKOPT`
-- [x] `SYS_GETSOCKOPT`
+- [ ] `SYS_SCHED_YIELD`
+- [ ] `SYS_SCHED_GETAFFINI`
+- [ ] `SYS_SOCKET`
+- [ ] `SYS_CONNECT`
+- [ ] `SYS_ACCEPT`
+- [ ] `SYS_ACCEPT4`
+- [ ] `SYS_SENDTO`
+- [ ] `SYS_RECVFROM`
+- [ ] `SYS_RECVMSG`
+- [ ] `SYS_SHUTDOWN`
+- [ ] `SYS_BIND`
+- [ ] `SYS_LISTEN`
+- [ ] `SYS_GETSOCKNAME`
+- [ ] `SYS_GETPEERNAME`
+- [ ] `SYS_SETSOCKOPT`
+- [ ] `SYS_GETSOCKOPT`
 - [x] `SYS_CLONE`
 - [x] `SYS_EXECVE`
 - [x] `SYS_EXIT`
@@ -107,9 +140,9 @@
 - [ ] ~~`SYS_SETITIMER`~~
 - [x] `SYS_GETTIMEOFDAY`
 - [x] `SYS_CLOCK_GETTIME`
-- [x] `SYS_SEMGET`
-- [x] `SYS_SEMOP`
-- [x] `SYS_SEMCTL`
+- [ ] `SYS_SEMGET`
+- [ ] `SYS_SEMOP`
+- [ ] `SYS_SEMCTL`
 - [ ] ~~`SYS_MSGGET`~~
 - [ ] ~~`SYS_MSGCTL`~~
 - [x] `SYS_SHMGET`
@@ -120,9 +153,9 @@
 - [x] `SYS_UNAME`
 - [ ] ~~`SYS_UMASK`~~
 - [ ] ~~`SYS_SETRLIMIT`~~
-- [x] `SYS_GETRUSAGE`
-- [x] `SYS_SYSINFO`
-- [x] `SYS_TIMES`
+- [ ] `SYS_GETRUSAGE`
+- [ ] `SYS_SYSINFO`
+- [ ] `SYS_TIMES`
 - [ ] ~~`SYS_GETUID`~~
 - [ ] ~~`SYS_GETGID`~~
 - [ ] ~~`SYS_SETUID`~~
@@ -138,16 +171,16 @@
 - [ ] ~~`SYS_SETRESUID`~~
 - [ ] ~~`SYS_SETRESGID`~~
 - [ ] ~~`SYS_SETGID`~~
-- [x] `SYS_SETPRIORITY`
+- [ ] `SYS_SETPRIORITY`
 - [ ] ~~`SYS_PRCTL`~~
 - [ ] ~~`SYS_MEMBARRIER`~~
-- [x] `SYS_PRLIMIT64`
-- [x] `SYS_REBOOT`
-- [x] `SYS_GETRANDOM`
+- [ ] `SYS_PRLIMIT64`
+- [ ] `SYS_REBOOT`
+- [ ] `SYS_GETRANDOM`
 - [ ] `SYS_RT_SIGQUEUEINFO`
-- [x] `SYS_INIT_MODULE`
-- [ ] ~~`SYS_FINIT_MODULE`~~
-- [x] `SYS_DELETE_MODULE`
+- [ ] `SYS_INIT_MODULE`
+- [x] ~~`SYS_FINIT_MODULE`~~
+- [ ] `SYS_DELETE_MODULE`
 - [x] `SYS_MAP_PCI_DEVICE`
 - [x] `SYS_GET_PADDR`
 - [x] `SYS_OPEN`

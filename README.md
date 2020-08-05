@@ -17,7 +17,7 @@
 |    Mon    |    Tue    |    Wed    |    Thu    |    Fri    |    Sat    |    Sun    |
 |-----------|-----------|-----------|-----------|-----------|-----------|-----------|
 |           |           |           |           |           |  1([D29]) |  2([D30]) |
-|  3([D31]) |  4([D32]) |  5        |  6        |  7        |  8        |  9        |
+|  3([D31]) |  4([D32]) |  5([D33]) |  6        |  7        |  8        |  9        |
 | 10        | 11        | 12        | 13        | 14        | 15        | 16        |
 | 17        | 18        | 19        | 20        | 21        | 22        | 23        |
 | 24        | 25        | 26        | 27        | 28        | 29        | 30        |
@@ -50,6 +50,7 @@
 * [(Day 23) 实验三：虚实地址转换](06-rcore-lab-notes/lab3_practice.md)
 * [(Day 27) zircon-objects](07-zcore-notes/objects.md)
 * [(Day 27) zircon-syscall](07-zcore-notes/syscall.md)
+* (Day 33) 在 zCore 中运行外部编译的 HelloWorld
 
 ---
 
@@ -1402,6 +1403,132 @@ if let Ok(()) = elf.relocate(base) {}
 
 晚安
 
+## Day 33 2020-08-05
+
+昨天整理的系统调用不太全，有些已经写上但是注释掉的我都给算上已经实现了，现在已经修复
+
+debug 过程太长，不放到这里了，我又创建了一个新的文件来记录今天的 debug 过程：[debug_20200805.md](07-zcore-notes/debug_20200805.md)
+
+debug 结束，原来不是 bug，是个 feature
+
+现在可以在 zCore 中运行我自己编译的 HelloWorld 了
+
+那么下一步是编译 `musl-gcc`，代码地址在：[musl](http://git.musl-libc.org/cgit/musl)
+
+今天下午开会，感觉 TBSI 也不错
+
+尝试编译许久 `musl-gcc`，未果，偶然发现一神奇的方式：用 docker 整一个 alpine 系统的容器，然后在容器里面安装 `musl-gcc`，再复制出来，就解决了不少问题
+
+记录一下依赖的包：
+
+> / # apk add gcc
+>
+> (1/11) Installing libgcc (9.3.0-r2)
+>
+> (2/11) Installing libstdc++ (9.3.0-r2)
+>
+> (3/11) Installing binutils (2.34-r1)
+>
+> (4/11) Installing gmp (6.2.0-r0)
+>
+> (5/11) Installing isl (0.18-r0)
+>
+> (6/11) Installing libgomp (9.3.0-r2)
+>
+> (7/11) Installing libatomic (9.3.0-r2)
+>
+> (8/11) Installing libgphobos (9.3.0-r2)
+>
+> (9/11) Installing mpfr4 (4.0.2-r4)
+>
+> (10/11) Installing mpc1 (1.1.0-r1)
+>
+> (11/11) Installing gcc (9.3.0-r2)
+
+然后，又出现了一点小问题：
+
+> $ cargo run -p linux-loader /usr/bin/gcc
+>
+> Finished dev [unoptimized + debuginfo] target(s) in 0.06s
+>
+> Running \`target/debug/linux-loader /usr/bin/gcc\`
+>
+> /lib/ld-musl-x86_64.so.1: /usr/bin/gcc: Not a valid dynamic program
+
+`ld-musl-x86_64.so` 报错：`/usr/bin/gcc` 不是一个合法的动态程序
+
+查了好久，找到了原因：[What is the correct way to static link libc?](https://stackoverflow.com/questions/59462844/what-is-the-correct-way-to-static-link-libc)
+
+原因是，复制进去的 GCC 不是 `PIE-enabled`，对其执行一下 `file` 命令跟 Busybox 对比，果然是这样
+
+> $ file rootfs/bin/gcc  
+>
+> rootfs/bin/gcc: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib/ld-musl-x86_64.so.1, stripped
+>
+> $ file rootfs/bin/busybox
+>
+> rootfs/bin/busybox: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib/ld-musl-x86_64.so.1, stripped
+
+GCC 没有 pie，这个目前还不知道该怎么解决...
+
+那么进行到现在，zCore 只能运行动态链接到 `ld-musl-x86_64.so.1` 的，而且 `PIE-enabled` 的程序，动态链接这个是硬性要求，但是 PIE 这个我觉得可以解决
+
+我又把 `rustc` 及其依赖的动态库复制到 `rootfs/` 里面了，但是缺少 `GETRANDOM` 系统调用
+
+> $ cargo run -p linux-loader /bin/rustc
+>
+> Finished dev [unoptimized + debuginfo] target(s) in 0.06s
+>
+> Running \`target/debug/linux-loader /bin/rustc\`
+>
+> [ERROR][6] unknown syscall: GETRANDOM. exit...
+
+补上 `GETRANDOM` 系统调用后，可以勉强运行了：
+
+> $ cargo run -p linux-loader /bin/rustc
+>
+> Finished dev [unoptimized + debuginfo] target(s) in 0.06s
+>
+> Running `target/debug/linux-loader /bin/rustc`
+>
+> error: no default toolchain configured
+
+跑了一下 `rustup`，报 `assert failed`：
+
+> cargo run -p linux-loader /bin/rustup
+>
+> Finished dev [unoptimized + debuginfo] target(s) in 0.06s
+>
+> Running \`target/debug/linux-loader /bin/rustup\`
+>
+> thread 'async-std/runtime' panicked at 'assertion failed: target + PAGE_SIZE < PMEM_SIZE', kernel-hal-unix/src/lib.rs:231:5
+>
+> note: run with \`RUST_BACKTRACE=1\` environment variable to display a backtrac
+
+又复制了一下 `nginx`，折腾折腾配置，运行，缺少系统调用，还行
+
+> $ cargo run -p linux-loader /bin/nginx
+>
+> Finished dev [unoptimized + debuginfo] target(s) in 0.06s
+>
+> Running \`target/debug/linux-loader /bin/nginx\`
+>
+> [ERROR][6] unknown syscall: SCHED_GETAFFINITY. exit...
+
+今天的总结：
+
+> gcc、nginx、rustup 均解决动态链接的问题
+>
+> gcc 由于编译的问题，没有 PIE-enabled，启动不起来，正在找解决方案
+>
+> nginx 能启动起来，缺少系统调用 SCHED_GETAFFINITY
+>
+> rustup 能启动起来，缺少系统调用 GETRANDOM，补上后会报 assert failed，还没有排查
+
+今天先到这，晚上回去查 PIE 相关资料
+
+晚安～
+
 ---
 
 [D0]: #day-0-2020-07-03
@@ -1437,3 +1564,4 @@ if let Ok(()) = elf.relocate(base) {}
 [D30]: #day-30-2020-08-02
 [D31]: #day-31-2020-08-03
 [D32]: #day-32-2020-08-04
+[D33]: #day-33-2020-08-05
