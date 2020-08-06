@@ -17,7 +17,7 @@
 |    Mon    |    Tue    |    Wed    |    Thu    |    Fri    |    Sat    |    Sun    |
 |-----------|-----------|-----------|-----------|-----------|-----------|-----------|
 |           |           |           |           |           |  1([D29]) |  2([D30]) |
-|  3([D31]) |  4([D32]) |  5([D33]) |  6        |  7        |  8        |  9        |
+|  3([D31]) |  4([D32]) |  5([D33]) |  6([D34]) |  7        |  8        |  9        |
 | 10        | 11        | 12        | 13        | 14        | 15        | 16        |
 | 17        | 18        | 19        | 20        | 21        | 22        | 23        |
 | 24        | 25        | 26        | 27        | 28        | 29        | 30        |
@@ -1529,6 +1529,40 @@ GCC 没有 pie，这个目前还不知道该怎么解决...
 
 晚安～
 
+## Day 34 2020-08-06
+
+在 alpine 的仓库里找到了 GCC 的 commit 记录，GCC 是在 6.1.0 版本才加入默认 enable-pie 的，我 clone 了 [alpine 包管理器的仓库](https://github.com/alpinelinux/aports)，切到 [enable-pie 的 commit](https://github.com/alpinelinux/aports/commit/5b7befa1b989315a57f4fb49b8381ce06ded96c9) 的 [前一个 commit](https://github.com/alpinelinux/aports/commit/25c19fed5767953094db3d80079717b8c83baa05)，clone，然后编译
+
+编译挺复杂的，我列一下命令吧，不过可能不全
+
+> \# adduser test
+>
+> \# cp -r gcc /home/test/
+>
+> \# addgroup test abuild
+>
+> \# su - test
+>
+> $ cd ~/gcc
+>
+> $ abuild-keygen -a
+>
+> $ abuild -r
+
+编译失败，旧版本还是需要 no-pie，而我试图查一下为什么 GCC 一定需要 PIE-disabled，也没有查到
+
+近期的目标是移植 shell，这需要实现 `sys_poll` 以及 stdin，stdin 需要实现 `Condvar`，`Condvar` 需要获得当前线程并挂起
+
+今天打算先实现不需要 `Condvar` 的 stdin，但是在这卡了好久，没什么进展
+
+老办法，单步跟踪
+
+犯了个低级错误，`serial_read` 接收的参数是 `&mut [u8]`，我用 `Vec::with_capacity(255)` 创建了 `Vec<u8>` 传过去一直读不到，最后读文档才知道 `with_capacity` 创建出来的 `Vec` 的 `len()` 其实是 0
+
+又回酒店折腾了一个多小时，终于把 stdin 给写出来了，但是没有用 `Condvar`，也没有用 `async`，不知道提交上去给不给 merge（
+
+今天就先到这，晚安！
+
 ---
 
 [D0]: #day-0-2020-07-03
@@ -1565,3 +1599,4 @@ GCC 没有 pie，这个目前还不知道该怎么解决...
 [D31]: #day-31-2020-08-03
 [D32]: #day-32-2020-08-04
 [D33]: #day-33-2020-08-05
+[D34]: #day-34-2020-08-06
