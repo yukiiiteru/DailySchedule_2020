@@ -1,5 +1,32 @@
 # 第二阶段实验日志
 
+## 进度汇总
+
+* 实现 stdin
+* QEMU 中 移植 shell 成功
+  * LibOS 中由于 `sys_fork` 的限制，无法移植
+* LibOS 中 移植 GCC 成功
+  * 由于 HostFS 限制，无法执行 `CHMOD`，所以编译出的程序无运行权限，需要手动添加
+* QEMU 中 移植 GCC 进行中
+  * QEMU 中 运行会报 Page Fault，正在解决
+* LibOS 中 移植 Rust 工具链进行中
+  * 目前可以在 LibOS 中输出 help 信息
+  * 编译时 `sys_pipe` 和 `sys_poll` 会有一点冲突
+* 移植 Nginx 未开始
+  * zCore 中还没有实现网络相关系统调用
+
+## Day 12 2020-08-14
+
+攒了一堆不知道该怎么解决的任务，如下
+
+* shell 无法直接用 PATH 里的命令
+* shell 用一会就因为 `sys_wait4` 而阻塞
+* GNU Make 使用 `sys_pipe` 之后用 `sys_read` 而阻塞
+* GCC 在 QEMU 中使用 `sys_vfork` 而报 Page Fault
+* rustc 在 LibOS 中使用 `sys_pipe` 后会死循环调用 `sys_poll`
+
+今天没有进度
+
 ## Day 11 2020-08-13
 
 之前的日志过于日常向了，重新开一个比较正式的日志
@@ -8,7 +35,7 @@
 
 ### Day 11 进度
 
-* GCC 移植成功，可以正常编译程序，
+* GCC 在 LibOS 中移植成功，可以正常编译程序，
   * 不过缺少系统调用 `CHMOD`，不会为编译出的程序增加运行权限
   * 编写 `CHMOD` 完成，然后发现 HostFS 并不支持...
 
