@@ -3,26 +3,37 @@
 ## 进度汇总
 
 * 实现 stdin
+* LibOS 中 移植 shell 成功
 * QEMU 中 移植 shell 成功
-  * LibOS 中由于 `sys_fork` 的限制，无法移植
 * LibOS 中 移植 GCC 成功
   * 由于 HostFS 限制，无法执行 `CHMOD`，所以编译出的程序无运行权限，需要手动添加
 * QEMU 中 移植 GCC 进行中
-  * QEMU 中 运行会报 Page Fault，正在解决
+  * QEMU 中 运行会因为写入文件问题而 panic
 * LibOS 中 移植 Rust 工具链进行中
   * 目前可以在 LibOS 中输出 help 信息
   * 编译时 `sys_pipe` 和 `sys_poll` 会有一点冲突
 * 移植 Nginx 未开始
   * zCore 中还没有实现网络相关系统调用
 
+## Day 13 2020-08-15
+
+今天开会，经王润基学长提示，解决了 QEMU 中 GCC 报 Page Fault 的问题，现在 Page Fault 的问题解决了，但是之后也会因为 `sys_wait4` 而阻塞
+
+此外，王润基学长发现 busybox 编译时有一个 Force NOMMU 的编译参数，加上该参数后编译，shell 就可以在 LibOS 中运行了
+
+### Day 13 进度
+
+* shell 在 LibOS 中移植成功（感谢 rjgg
+* shell 在 QEMU 中也可以几乎完美运行了
+
 ## Day 12 2020-08-14
 
 攒了一堆不知道该怎么解决的任务，如下
 
-* shell 无法直接用 PATH 里的命令
-* shell 用一会就因为 `sys_wait4` 而阻塞
+* shell 无法直接用 PATH 里的命令（**20200815补充**：云微同学修好啦）
+* shell 用一会就因为 `sys_wait4` 而阻塞（**20200815补充**：我修好啦）
 * GNU Make 使用 `sys_pipe` 之后用 `sys_read` 而阻塞
-* GCC 在 QEMU 中使用 `sys_vfork` 而报 Page Fault
+* GCC 在 QEMU 中使用 `sys_vfork` 而报 Page Fault（**20200815补充**：经 rjgg 提示，这个问题解决了，但是又出现了新的问题...）
 * rustc 在 LibOS 中使用 `sys_pipe` 后会死循环调用 `sys_poll`
 
 今天没有进度
