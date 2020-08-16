@@ -15,6 +15,14 @@
 * 移植 Nginx 未开始
   * zCore 中还没有实现网络相关系统调用
 
+## Day 14 2020-08-16
+
+突然发现 QEMU 里的 shell 修好之后 LibOS 里的 shell 又坏掉了，不知道为什么
+
+### Day 14 进度
+
+* 实现了三个 signal 相关的系统调用
+
 ## Day 13 2020-08-15
 
 今天开会，经王润基学长提示，解决了 QEMU 中 GCC 报 Page Fault 的问题，现在 Page Fault 的问题解决了，但是之后也会因为 `sys_wait4` 而阻塞
