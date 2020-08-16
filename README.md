@@ -1848,6 +1848,25 @@ why???
 
 明天继续研究 rustc，晚安
 
+**20200816深夜补充**：我的 PR 被 rjgg 重构了，重构过的代码被放到了另一个分支，但是我还是不太熟悉 Git 和 GitHub 的使用，不知道如何照 rjgg 说的做，折腾了一晚上，最后用复制粘贴解决了...改天有机会问一下这种情况该怎么整
+
+我来复述一下当时的情况吧：
+
+1. 我 fork 了 zCore，然后添加的 signal 相关代码并提交 PR
+2. 学长重构了我的代码，并把重构后的代码放到了 signal 分支，然后让我 reset your branch to 'signal' and force push
+
+但是当时我 fork 的仓库里并没有新增的分支，从原仓库向我的仓库 PR 也不行，我就试图曲线救国，新建一个 signal 分支，把原仓库的 signal 分支 pull 过来，解决文件冲突，然后 checkout 到 master，再 reset 到 origin/signal，然后 force push
+
+但是我卡在了 checkout 上，报了一条我一已经忘记内容的错误，reset 也不行，一着急把我本地的 fork 给 rm 掉了，然后试图重新 clone 重新解决，但是最终还是一样的结果
+
+最后，我打算用笨办法，不折腾分支了，在本地 clone 一份原仓库一份我的 fork，把我 fork 的仓库里需要改的文件删掉，然后再从原仓库的 signal 分支复制过来，force push，完成
+
+最后还是笨办法管用（
+
+唉，我还是 GitHub 用得不熟练啊，还要多学习
+
+先睡了，不打扰 rjgg 了，这次是真的晚安
+
 ---
 
 [D0]: #day-0-2020-07-03
