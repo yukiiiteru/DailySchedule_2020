@@ -18,8 +18,8 @@
 |-----------|-----------|-----------|-----------|-----------|-----------|-----------|
 |           |           |           |           |           |  1([D29]) |  2([D30]) |
 |  3([D31]) |  4([D32]) |  5([D33]) |  6([D34]) |  7([D35]) |  8([D36]) |  9([D37]) |
-| 10([D38]) | 11([D39]) | 12([D40]) | 13([D41]) | 14([D42]) | 15([D43]) | 16        |
-| 17        | 18        | 19        | 20        | 21        | 22        | 23        |
+| 10([D38]) | 11([D39]) | 12([D40]) | 13([D41]) | 14([D42]) | 15([D43]) | 16([D44]) |
+| 17([D45]) | 18        | 19        | 20        | 21        | 22        | 23        |
 | 24        | 25        | 26        | 27        | 28        | 29        | 30        |
 | 31        |           |           |           |           |           |           |
 
@@ -51,6 +51,11 @@
 * [(Day 27) zircon-objects](07-zcore-notes/objects.md)
 * [(Day 27) zircon-syscall](07-zcore-notes/syscall.md)
 * (Day 33) 在 zCore 中运行外部编译的 HelloWorld
+* (Day 34) LibOS 中实现 stdin
+* (Day 35) LibOS 中 shell 移植成功
+* (Day 40) 实现 stdin
+* (Day 41) LibOS 中 GCC 移植成功
+* (Day 43) QEMU 中 shell 移植成功
 
 ---
 
@@ -1867,6 +1872,54 @@ why???
 
 先睡了，不打扰 rjgg 了，这次是真的晚安
 
+## Day 45 2020-08-17
+
+继续研究 rustc，并补充其需要的系统调用
+
+补上了 `sys_sched_getaffinity` rustc 依旧运行不起来
+
+我在怀疑是由于 zCore 是单核，我的 docker 环境是四核才导致 rustc 需要使用 pipe 和 poll，然后切到 Windows，在虚拟机下装了 AlpineLinux，CPU 设置为单核，`strace rustc`，并没有调用 pipe 和 poll，场面一度陷入僵局
+
+下午打算把 rustc 放到 QEMU 里跑一下试试，结果 QEMU 启动不起来，原因是 Rust 工具链太大了，一共需要 400 多 MB，而 zCore 内存开太小的话运行 rustc 会报 OOM，内存开太大的话 zCore 本身也会比较大，跟磁盘文件 `x86_64.img` 放到一起的话会超过 FAT16 文件系统的上限，导致 QEMU 无法启动，就很尴尬
+
+Rust 工具链里面有一个库文件特别大，有 168.8 MB，这一个文件占了 Rust 工具链的接近一半空间，然而删掉这个文件的话 rustc 又报错
+
+我以为这是 FAT16 的问题，参考网上找到的方案，把 `Makefile` 第 41 行从：
+
+```makefile
+-drive format=raw,file=fat:rw:$(ESP) \
+```
+
+改为：
+
+```makefile
+-drive file.driver=vvfat,file.dir=$(ESP),file.fat-type=32 \
+```
+
+将 ESP 目录作为 FAT32 分区，结果还是不行，仍然会报错，甚至还多了一个 warning：
+
+> warning: FAT32 has not been tested. You are welcome to do so!
+>
+> Directory does not fit in FAT32 (capacity 516.06 MB)
+
+事实证明，这是 QEMU 的问题
+
+在网上找到了一种方案：[\[Qemu-devel\] Re: Size of virtual FAT disk limit?](https://lists.gnu.org/archive/html/qemu-devel/2007-07/msg00154.html)
+
+这种方案的思路是把文件创建成 iso 文件，感觉有一定参考价值，然后顺着这种思路找到了 [How can an image file be created for a directory?](https://unix.stackexchange.com/questions/503211/how-can-an-image-file-be-created-for-a-directory)
+
+参考这种方法把 ESP 目录制作成一个 1G 大小的 img 文件，Makefile 放到我的仓库里了，地址：[Makefile](07-zcore-notes/Makefile)
+
+第一次制作 `disk.img` 需要 root 权限。其实理论上是可以不需要的，我懒得改了（
+
+然后 QEMU 启动，运行 rustc，报错：OOM
+
+我一怒之下把内存从 64M 改成了 512M，光编译就编译了好久，然后运行 rustc，报错：OOM
+
+我觉得可能需要 `sys_brk` 系统调用了...但是我不会写...
+
+今天先到这，晚安
+
 ---
 
 [D0]: #day-0-2020-07-03
@@ -1914,3 +1967,4 @@ why???
 [D42]: #day-42-2020-08-14
 [D43]: #day-43-2020-08-15
 [D44]: #day-44-2020-08-16
+[D45]: #day-45-2020-08-17

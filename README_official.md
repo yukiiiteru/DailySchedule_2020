@@ -11,9 +11,19 @@
   * QEMU 中 运行会因为写入文件问题而 panic
 * LibOS 中 移植 Rust 工具链进行中
   * 目前可以在 LibOS 中输出 help 信息
-  * 编译时 `sys_pipe` 和 `sys_poll` 会有一点冲突
+    * 编译时 `sys_pipe` 和 `sys_poll` 会有一点冲突
+  * 在 QEMU 中运行时会报 OOM，把堆空间从 16M 改到 512M 都不行
+    * 可能是因为缺少系统调用 `sys_brk`
 * 移植 Nginx 未开始
   * zCore 中还没有实现网络相关系统调用
+
+## Day 15 2020-08-17
+
+折腾 rustc 折腾了一天，还是没运行起来...
+
+### Day 15 进度
+
+* 实现了系统调用 `sys_sched_getaffinity`
 
 ## Day 14 2020-08-16
 
