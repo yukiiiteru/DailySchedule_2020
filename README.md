@@ -19,7 +19,7 @@
 |           |           |           |           |           |  1([D29]) |  2([D30]) |
 |  3([D31]) |  4([D32]) |  5([D33]) |  6([D34]) |  7([D35]) |  8([D36]) |  9([D37]) |
 | 10([D38]) | 11([D39]) | 12([D40]) | 13([D41]) | 14([D42]) | 15([D43]) | 16([D44]) |
-| 17([D45]) | 18([D46]) | 19        | 20        | 21        | 22        | 23        |
+| 17([D45]) | 18([D46]) | 19([D47]) | 20        | 21        | 22        | 23        |
 | 24        | 25        | 26        | 27        | 28        | 29        | 30        |
 | 31        |           |           |           |           |           |           |
 
@@ -1942,6 +1942,83 @@ Rust 工具链里面有一个库文件特别大，有 168.8 MB，这一个文件
 
 今天也是没有进展的一天，晚安
 
+## Day 47 2020-08-19
+
+在各种 bug 中研究了大半天，没有进展，感觉进行不下去了...
+
+再总结一下现在解决不了的问题，然后去问一下 rjgg 吧
+
+1. QEMU 中运行 GCC 会在 `linux-object/src/fs/device.rs:25` 处报减法下溢
+2. LibOS 中运行 rustc 会无限循环调用 `sys_poll`
+3. QEMU 中运行 rustc 会报 OOM，堆内存改成 512M 也不行
+
+rjgg 的回答：
+
+> 可能磁盘镜像不够大？
+>
+> 把 x86_64.img 调大点试试？
+>
+> 哦我知道了，`mmap` 的时候把文件所有内容都读到 `vec` 里了……rCore 里面是直接文件映射的，zCore 当时移植的时候简化了这个
+
+读了一下 `sys_mmap` 的代码，的确如此：
+
+在 rCore 中，先获得 `file_like`，再创建映射区域，使文件映射：
+
+```rust
+        if flags.contains(MmapFlags::ANONYMOUS) {
+          ...
+        } else {
+            let file_like = proc.get_file_like(fd)?;
+            let area = MMapArea {
+                start_vaddr: addr,
+                end_vaddr: addr + len,
+                prot: prot.bits(),
+                flags: flags.bits(),
+                offset,
+            };
+            file_like.mmap(area)?;
+            Ok(addr)
+        }
+```
+
+在 zCore 中，直接把 `file` 读到 `buf` 中，然后直接写入 `vmo`，
+
+```rust
+        if flags.contains(MmapFlags::ANONYMOUS) {
+            ...
+        } else {
+            let file = self.linux_process().get_file(fd)?;
+            let mut buf = vec![0; len];
+            let len = file.read_at(offset, &mut buf).await?;
+            let vmo = VmObject::new_paged(pages(len));
+            vmo.write(0, &buf[..len])?;
+            let addr = vmar.map(vmar_offset, vmo.clone(), 0, vmo.len(), prot.to_flags())?;
+            Ok(addr)
+        }
+```
+
+...我觉得这么实现，除了有点简单粗暴，好像也没什么问题
+
+然后我把 `x86_64.img` 调大了一点，`gcc` 正常运行...
+
+直接编译出的程序不能运行，会报不是可用的动态链接程序，这时候只需要把：
+
+```bash
+x86_64-linux-musl-gcc xxx.c
+```
+
+改成：
+
+```bash
+x86_64-linux-musl-gcc -pie -fpie xxx.c
+```
+
+就好啦！
+
+好想移植 GNU Make，这样就可以在 zCore 里编译 uCore 了
+
+今天先到这，晚安～
+
 ---
 
 [D0]: #day-0-2020-07-03
@@ -1991,3 +2068,4 @@ Rust 工具链里面有一个库文件特别大，有 168.8 MB，这一个文件
 [D44]: #day-44-2020-08-16
 [D45]: #day-45-2020-08-17
 [D46]: #day-46-2020-08-18
+[D47]: #day-47-2020-08-19
