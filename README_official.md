@@ -11,11 +11,19 @@
   * QEMU 中 运行会因为写入文件问题而 panic
 * 移植 Rust 工具链进行中
   * 目前可以在 LibOS 中输出 help 信息
-    * 编译时 `sys_pipe` 和 `sys_poll` 会有一点冲突
+    * 编译时找不到 `std` crate
   * 在 QEMU 中运行时会报 OOM，把堆空间从 16M 改到 512M 都不行
     * 可能是因为缺少系统调用 `sys_brk`
 * 移植 Nginx 未开始
   * zCore 中还没有实现网络相关系统调用
+
+## Day 18 2020-08-20
+
+rustc 在 LibOS 里跑是 `sys_poll` 的问题！解决了！
+
+### Day 18 进度
+
+* 修复了 `sys_poll`，现在 rustc 编译程序会报找不到 `std`
 
 ## Day 17 2020-08-19
 

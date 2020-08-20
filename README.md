@@ -2019,6 +2019,54 @@ x86_64-linux-musl-gcc -pie -fpie xxx.c
 
 今天先到这，晚安～
 
+## Day 48 2020-08-20
+
+总结一下 GNU Make 遇到的问题：
+
+* LibOS 中，会因为 `sys_clone` 不支持的参数而 panic，把 `unimplemented` 改成 `sys_vfork` 之后（好像）会因为 `sys_vfork` 而报段错误，不知道怎么解决
+* QEMU 中，会因为 `sys_clone` 不支持的参数而 panic，把 `unimplemented` 改成 `sys_fork` 之后就会报不支持用户态中断，不知道怎么解决
+
+继续研究 rustc 好了，话说我一直搞不懂为什么 rustc 会死循环调用 `sys_poll`，查了好多资料，查到的结果是，如果 `sys_poll` 返回 0，也就是 timeout 才会循环，如果返回非 0 值的话就会 `break`，按道理是不会死循环的啊
+
+而且根据 `strace` 跟踪的结果，Alpine Linux 中的 rustc 也是的确 `sys_poll` 返回 1 之后就从 pipe 里 read 了，但是不知道为什么 zCore 里会死循环
+
+试图搜 rustc 的代码，也没得到什么结果，我甚至都有点怀疑是 `sys_poll` 的实现出的问题了
+
+把 `sys_poll` 的返回值改掉也不行，对比了一下 rCore 和 zCore 的 `sys_poll` 也没什么区别，把 `sys_poll` 里面的 `async_poll` 改成 `poll` 也不行，看来不是实现的问题了
+
+但是 rustc 也没什么问题啊，在 Alpine Linux 里面运行就正常
+
+`sys_pipe` 没问题，这个有测试过，`sys_poll` 应该没问题，rustc 也没问题，还能是哪出的问题呢...
+
+我甚至都想 `objdump` rustc 了...
+
+**几个小时后**：我注意到 `strace` 的结果里有这样一段：
+
+> [pid    45] poll([{fd=3, events=POLLIN}], 1, -1) = 1 ([{fd=3, revents=POLLIN}])
+
+注意最后的括号里面，`sys_poll` 有返回 `revents`，我又去查 [poll 的文档](https://www.man7.org/linux/man-pages/man2/poll.2.html)，发现有这样一句话：
+
+> The field `revents` is an output parameter, filled by the kernel with
+> the events that actually occurred.
+
+我改了一下 `sys_poll`，在最后把 `ufds` 写回去，问题解决了，现在运行 rustc 编译程序，会报如下错误：
+
+> error[E0463]: can't find crate for \`std\`
+>
+> error: aborting due to previous error
+>
+> For more information about this error, try \`rustc --explain E0463\`.
+
+这是好的，是程序迁移的问题，不是系统的问题了，但是这个该怎么解决呢...
+
+感觉这个有参考价值：[error[E0463]: can't find crate for \`std\` #60335](https://github.com/rust-lang/rust/issues/60335)
+
+新的安装方法放到 [我们组的仓库](https://github.com/yunwei37/zcore_migration_notes/tree/master/migration) 了
+
+按照该 issue 所说的方法安装后不报找不到 `std` 了，但是会报不明原因的段错误，而且报错的位置还每次都不一样，就很迷
+
+今天到这，明天继续 debug，晚安
+
 ---
 
 [D0]: #day-0-2020-07-03
@@ -2069,3 +2117,4 @@ x86_64-linux-musl-gcc -pie -fpie xxx.c
 [D45]: #day-45-2020-08-17
 [D46]: #day-46-2020-08-18
 [D47]: #day-47-2020-08-19
+[D48]: #day-48-2020-08-20
