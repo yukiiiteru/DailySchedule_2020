@@ -6,24 +6,33 @@
 * LibOS 中 移植 shell 成功
 * QEMU 中 移植 shell 成功
 * LibOS 中 移植 GCC 成功
-  * 由于 HostFS 限制，无法执行 `CHMOD`，所以编译出的程序无运行权限，需要手动添加
-* QEMU 中 移植 GCC 进行中
-  * QEMU 中 运行会因为写入文件问题而 panic
+* QEMU 中 移植 GCC 成功
+  * 有点玄学问题，不一定每次都能编译出来
 * 移植 Rust 工具链进行中
   * 目前可以在 LibOS 中输出 help 信息
-    * 编译时找不到 `std` crate
+    * 可以编译出 `*.o` 的中间结果，之后会报段错误
   * 在 QEMU 中运行时会报 OOM，把堆空间从 16M 改到 512M 都不行
     * 可能是因为缺少系统调用 `sys_brk`
 * 移植 Nginx 未开始
   * zCore 中还没有实现网络相关系统调用
 
+## Day 19 2020-08-21
+
+配了个可以演示的环境
+
+试图在 rCore 里运行 rustc 并跟踪，没有进展
+
 ## Day 18 2020-08-20
 
 rustc 在 LibOS 里跑是 `sys_poll` 的问题！解决了！
 
+rustc 在 LibOS 里找不到 `std` crate 的问题也解决了！
+
+现在会报段错误，位置不确定，所以原因不明
+
 ### Day 18 进度
 
-* 修复了 `sys_poll`，现在 rustc 编译程序会报找不到 `std`
+* 修复了 `sys_poll`，现在 rustc 可以编译出 `*.o` 的中间结果，之后会报段错误
 
 ## Day 17 2020-08-19
 

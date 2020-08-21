@@ -19,7 +19,7 @@
 |           |           |           |           |           |  1([D29]) |  2([D30]) |
 |  3([D31]) |  4([D32]) |  5([D33]) |  6([D34]) |  7([D35]) |  8([D36]) |  9([D37]) |
 | 10([D38]) | 11([D39]) | 12([D40]) | 13([D41]) | 14([D42]) | 15([D43]) | 16([D44]) |
-| 17([D45]) | 18([D46]) | 19([D47]) | 20        | 21        | 22        | 23        |
+| 17([D45]) | 18([D46]) | 19([D47]) | 20([D48]) | 21([D49]) | 22        | 23        |
 | 24        | 25        | 26        | 27        | 28        | 29        | 30        |
 | 31        |           |           |           |           |           |           |
 
@@ -2067,6 +2067,38 @@ x86_64-linux-musl-gcc -pie -fpie xxx.c
 
 今天到这，明天继续 debug，晚安
 
+## Day 49 2020-08-21
+
+昨天会报找不到文件 `/proc/cpuinfo`，我把自己电脑上的复制过去一份，之后就不报段错误了，而是
+
+> thread 'async-std/runtime' panicked at 'not implemented', rcore-fs/src/std.rs:25:18
+>
+> note: run with \`RUST_BACKTRACE=1\` environment variable to display a backtrace
+
+好吧，原来是因为 `cpuinfo` 的权限没有修改，导致 HostFS 没有读权限，改好之后还是原来的段错误...
+
+看了下时间，明天就该开会了，然后我切到 Windows 试图再配一个展示用的环境，尝试了各种方式，最后决定在虚拟机里装裸的 ArchLinux，然后在 Windows 里用 ssh 连接到 Linux，果然舒服（
+
+然后晚上又试图在 rCore 里运行 rustc，观察结果，发现会发生跟之前 zCore 一样的问题：无限循环 `sys_poll`，这次我知道怎么改了，但是改完之后还是会报错：
+
+> [ERROR][0,-] Mutex: deadlock detected! locked by cpu 0 thread 0 @ 0xffffff0002d0f010
+
+但是看起来进展比 zCore 顺利，已经进行到用 `cc` 链接 (?) 了
+
+但是只有第一次是这样子的，之后几次运行都是报
+
+> panicked at 'assertion failed: !self.free_map.read()[id]', /rcore-fs-sfs/src/lib.rs:890:9
+>
+> === BEGIN rCore stack trace ===
+>
+> #00 ...
+>
+> === END rCore stack trace ===
+
+甚至 `ls` 都报错，可能是因为我改了 `sys_poll` 吧，但是不改的话 rustc 就运行不起来，就很难受
+
+到底是哪出的段错误呢
+
 ---
 
 [D0]: #day-0-2020-07-03
@@ -2118,3 +2150,4 @@ x86_64-linux-musl-gcc -pie -fpie xxx.c
 [D46]: #day-46-2020-08-18
 [D47]: #day-47-2020-08-19
 [D48]: #day-48-2020-08-20
+[D49]: #day-49-2020-08-21
