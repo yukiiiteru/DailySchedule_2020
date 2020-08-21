@@ -2079,6 +2079,8 @@ x86_64-linux-musl-gcc -pie -fpie xxx.c
 
 看了下时间，明天就该开会了，然后我切到 Windows 试图再配一个展示用的环境，尝试了各种方式，最后决定在虚拟机里装裸的 ArchLinux，然后在 Windows 里用 ssh 连接到 Linux，果然舒服（
 
+**晚上补充**：今晚又试了下，在虚拟机里面不能跑 QEMU，因为虚拟化指令不能嵌套，只能跑跑 LibOS 了
+
 然后晚上又试图在 rCore 里运行 rustc，观察结果，发现会发生跟之前 zCore 一样的问题：无限循环 `sys_poll`，这次我知道怎么改了，但是改完之后还是会报错：
 
 > [ERROR][0,-] Mutex: deadlock detected! locked by cpu 0 thread 0 @ 0xffffff0002d0f010
