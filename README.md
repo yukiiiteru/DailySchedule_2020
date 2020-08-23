@@ -2152,6 +2152,16 @@ x86_64-linux-musl-gcc -pie -fpie xxx.c
 
 晚安
 
+## Day 51 2020-08-23
+
+`sys_mmap` 好难写
+
+卡在 `commit_pages_with` 上面了，不是报段错误就是报 `Not a valid dynamic program`
+
+实在不行把内存改成 1G...这么大总行吧...
+
+明天再写一天 `sys_mmap`，没有进展就放弃吧，留给我的时间不多了
+
 ---
 
 [D0]: #day-0-2020-07-03
@@ -2205,3 +2215,4 @@ x86_64-linux-musl-gcc -pie -fpie xxx.c
 [D48]: #day-48-2020-08-20
 [D49]: #day-49-2020-08-21
 [D50]: #day-50-2020-08-22
+[D51]: #day-51-2020-08-23
