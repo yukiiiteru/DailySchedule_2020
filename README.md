@@ -2194,6 +2194,36 @@ x86_64-linux-musl-gcc -pie -fpie xxx.c
 
 今天先到这，晚安
 
+## Day 53 2020-08-25
+
+果然读文档有用啊，而且要读英文原版文档
+
+> Pages are committed (allocated) for VMOs on demand through `zx_vmo_read()`, `zx_vmo_write()`, or by writing to a mapping of the VMO created using `zx_vmar_map()`. Pages can be committed and decommitted from a VMO manually by calling `zx_vmo_op_range()` with the **ZX_VMO_OP_COMMIT** and **ZX_VMO_OP_DECOMMIT** operations, but this should be considered a low level operation. `zx_vmo_op_range()` can also be used for cache and locking operations against pages a VMO holds.
+
+VMO 的 `commit_page` 其实就是 *allocate memory*，这么说就好理解多了
+
+但是，作为一个 `MmapFile`，为什么需要 allocate memory 呢？
+
+如果非要 commit 的话，应该像 `VmObjectPhysical` 一样直接返回地址，还是像 `VmObjectPaged` 一样申请页面呢？
+
+我觉得应该像 `VmObjectPhysical` 一样，直接返回地址就行，但是为什么都不调用 `read`，就直接段错误了？是因为直接读内存了吗？
+
+打了下 log 发现还真是，不调用 `read` 直接读内存
+
+那么我该怎么知道程序想读的是被映射的文件哪部分呢...
+
+去群里问了下，rjgg 说 map 之后就不知道读哪了，一种可能的解决方法是：先不映射，让程序读内存的时候缺页，在 handle pagefault 的地方就可以知道程序要读的地方，这时候再映射就可以了
+
+我又试了下，LibOS 里触发不了缺页异常，因为内存够大；QEMU 里只要用了我写的 `sys_mmap`，不管映射不映射，总是会触发 page fault，而且不能 handle，page fault 之后就会 panic
+
+没有思路，就去写了 [rCore 到 zCore 功能迁移组汇报](https://github.com/yunwei37/zcore_migration_notes/blob/master/migration/usage.md)，因为开会的时候陈老师说要写一份已经完成成果的使用方法，我就先写着这个
+
+现在的版本只是我凭记忆写的，可能不太完善，明天有空再换台电脑照说明自己试试，有问题的地方再改改
+
+明天还打算给 `zCore/Makefile` 完善一下生成 `x86_64.img` 的部分
+
+今天先这样，晚安
+
 ---
 
 [D0]: #day-0-2020-07-03
