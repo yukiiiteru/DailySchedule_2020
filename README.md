@@ -2230,6 +2230,18 @@ VMO 的 `commit_page` 其实就是 *allocate memory*，这么说就好理解多�
 
 整了半个下午的 `Makefile`，已提交 Pull Request，也算有点成果吧
 
+## Day 55 2020-08-27
+
+今天也好忙，一直在折腾返校手续和收拾东西，手续算是基本办完了
+
+配好了 macOS 的演示环境，不过我刚提交的 PR [#165](https://github.com/rcore-os/zCore/pull/165) 还没有被合并，`make image` 相关功能还用不了
+
+（写到这里突然想起，好像可以从我 fork 的仓库 clone 然后测试...是我蠢了
+
+然后写了好久的组内汇报
+
+今天好忙
+
 ---
 
 [D0]: #day-0-2020-07-03
