@@ -56,6 +56,7 @@
 * (Day 40) QEMU 中实现 stdin
 * (Day 41) LibOS 中 GCC 移植成功
 * (Day 43) QEMU 中 shell 移植成功
+* (Day 50) QEMU 中 GCC 移植成功
 
 ---
 
